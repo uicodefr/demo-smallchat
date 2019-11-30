@@ -1,0 +1,21 @@
+@import '../../global.scss';
+
+.ChannelsCard {
+
+  .channelButtonZone {
+    .btn {
+      margin-left: $margin-small;
+      margin-right: $margin-small;
+    }
+  }
+
+  .generalButtonZone {
+    text-align: center;
+    margin-top: $margin-base;
+    .btn {
+      margin-left: $margin-base;
+      margin-right: $margin-base;
+    }
+  }
+
+}

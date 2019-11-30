@@ -1,0 +1,14 @@
+{
+	"jwks": [
+		{
+			"kty": "EC",
+			"d": "sc3ExqUN67m3kerEhHl0tRlVyU7CWd2VOH47n-7k3IE",
+			"use": "sig",
+			"crv": "P-256",
+			"kid": "key_20190815",
+			"x": "4jkg3Gs2GE_UzVpNuJohXrHLYFxf1rTEd_KmxZBQCOg",
+			"y": "Ot1_Q4QS-1z81mlDLZB34-MtrDNR1s8c_hqhUwBFrSk",
+			"alg": "ES256"
+		}
+	]
+}

@@ -1,0 +1,22 @@
+{
+	"confId": 1,
+	"httpPort": 8080,
+	"sqlitePath": "database.sqlite",
+	"kafkaProducer": {
+		"bootstrap.servers": "192.168.0.20:9092",
+		"key.serializer": "org.apache.kafka.common.serialization.StringSerializer",
+		"value.serializer": "io.vertx.kafka.client.serialization.JsonObjectSerializer",
+		"acks": "1"
+	},
+	"kafkaConsumer": {
+		"bootstrap.servers": "192.168.0.20:9092",
+		"key.deserializer": "org.apache.kafka.common.serialization.StringDeserializer",
+		"value.deserializer": "io.vertx.kafka.client.serialization.JsonObjectDeserializer",
+		"group.id": "mainConsumer",
+		"auto.offset.reset": "latest",
+		"enable.auto.commit": "true"
+	},
+	"kafkaAdmin": {
+		"bootstrap.servers": "192.168.0.20:9092"
+	}
+}
