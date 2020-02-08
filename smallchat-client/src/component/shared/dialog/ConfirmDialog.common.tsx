@@ -3,24 +3,22 @@ import Modal from 'react-bootstrap/Modal';
 import Button from 'react-bootstrap/Button';
 
 interface Props {
-  yesLabel?: string,
-  noLabel?: string,
-  confirmTitle: string,
-  confirmLabel: string,
-  detailLabel: string,
-  show: boolean
+  yesLabel?: string;
+  noLabel?: string;
+  confirmTitle: string;
+  confirmLabel: string;
+  detailLabel: string;
+  show: boolean;
   onConfirm: (confirm: boolean) => void;
 }
 
-interface State {
-}
+interface State {}
 
 export class ConfirmDialogCommon extends React.Component<Props, State> {
-
   static defaultProps = {
     yesLabel: 'Yes',
     noLabel: 'No'
-  }
+  };
 
   constructor(props: Props) {
     super(props);
@@ -55,5 +53,4 @@ export class ConfirmDialogCommon extends React.Component<Props, State> {
       </Modal>
     );
   }
-
 }

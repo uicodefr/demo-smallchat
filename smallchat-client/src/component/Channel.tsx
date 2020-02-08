@@ -1,65 +1,79 @@
 import React from 'react';
 import './Channel.scss';
-import { UserContextType } from '../context/UserContext';
-import { withAutoContext } from '../util/hoc.util';
 import Card from 'react-bootstrap/Card';
 import Jumbotron from 'react-bootstrap/Jumbotron';
 import Button from 'react-bootstrap/Button';
-import ListGroup from 'react-bootstrap/ListGroup'
+import ListGroup from 'react-bootstrap/ListGroup';
 import { LinkContainer } from 'react-router-bootstrap';
-import { WebSocketContextType } from '../context/WebSocketContext';
-import ChannelsCard from './channel/ChannelsCard';
 import { match } from 'react-router-dom';
-import { ChannelModel } from '../model/chat/channel.model';
+import { ChannelsCard } from './channel/ChannelsCard';
+import { ChatStateModel } from '../model/chat/chat-state.model';
+import { UserModel } from '../model/global/user.model';
+import { WebSocketService } from '../service/chat/websocket.service';
+import { AuthenticationService } from '../service/auth/authentication.service';
+import { Subscription } from 'rxjs';
+import { ChannelPanel } from './channel/ChannelPanel';
 
 interface Props {
-  userContext: UserContextType,
-  webSocketContext: WebSocketContextType
-  match: match
+  match: match; // For Routing
 }
 interface State {
-  channel: ChannelModel
+  chatState: ChatStateModel;
+  currentUser: UserModel;
+  selectedChannelId: number;
 }
 
-class Channel extends React.Component<Props, State> {
+export class Channel extends React.Component<Props, State> {
+  private webSocketService: WebSocketService;
+  private authenticationService: AuthenticationService;
+
+  private chatStateSubscription: Subscription;
+  private currentUserSubscription: Subscription;
 
   constructor(props: Props) {
     super(props);
+
+    this.webSocketService = WebSocketService.get();
+    this.authenticationService = AuthenticationService.get();
+
     this.state = {
-      channel: null
+      chatState: this.webSocketService.getChatState(),
+      currentUser: this.authenticationService.getCurrentUser(),
+      selectedChannelId: this.props.match?.params['channelId']
     };
-    this.loadChannel();
   }
 
-  componentDidUpdate(prevProps) {
-    if (this.props.match?.params['channelId'] !== prevProps.match?.params['channelId'] ||
-      this.props.webSocketContext?.chatState !== prevProps.webSocketContext?.chatState) {
-      this.loadChannel();
+  componentDidMount() {
+    this.chatStateSubscription = this.webSocketService.getChatStateObservable().subscribe(chatState => {
+      this.setState({ chatState: chatState });
+    });
+    this.currentUserSubscription = this.authenticationService.getCurrentUserObservable().subscribe(currentUser => {
+      this.setState({ currentUser: currentUser });
+    });
+  }
+
+  componentWillUnmount() {
+    if (this.chatStateSubscription) {
+      this.chatStateSubscription.unsubscribe();
+    }
+    if (this.currentUserSubscription) {
+      this.currentUserSubscription.unsubscribe();
     }
   }
 
-  private loadChannel() {
-    const channelId = this.props.match?.params['channelId'];
-    const chatStateChannels = this.props.webSocketContext?.chatState?.channels;
-    if (!channelId || !chatStateChannels) {
+  componentDidUpdate(prevProps) {
+    if (this.props.match?.params['channelId'] !== prevProps.match?.params['channelId']) {
       this.setState({
-        channel: null
-      });
-    } else {
-      const channel = this.props.webSocketContext.chatState.channels
-        .find(channel => channel.id === channelId);
-      this.setState({
-        channel: channel
+        selectedChannelId: this.props.match?.params['channelId']
       });
     }
   }
 
   render() {
-    const chatState = this.props.webSocketContext?.chatState;
+    const chatState = this.state.chatState;
 
     return (
       <div className="ChannelScreen">
-
         <div className="leftPanel">
           <ChannelsCard />
 
@@ -67,47 +81,31 @@ class Channel extends React.Component<Props, State> {
             <Card.Header>Users</Card.Header>
             <Card.Body>
               {chatState ? (
-                <ListGroup variant="flush">
-                  {chatState.users.map(user => 
+                <ListGroup variant="flush" className="smallItem">
+                  {chatState.users.map(user => (
                     <ListGroup.Item key={user.id} title={user.id}>
                       {user.pseudo}
                     </ListGroup.Item>
-                  )}
+                  ))}
                 </ListGroup>
-              ):(
+              ) : (
                 <p> - </p>
               )}
             </Card.Body>
           </Card>
-
         </div>
 
         <div className="mainPanel">
-          {this.state.channel ? (
-            <Jumbotron className="channelPanel">
-              <div className="channelHeader">
-                <span className="channelId"> {this.state.channel.id} </span>
-                <h1> {this.state.channel.name} </h1>
-                <span className="channelDescription"> {this.state.channel.description} </span>
-              </div>
-              <div className="channelShow">
-
-              </div>
-              <div className="channelSend">
-              </div>
-            </Jumbotron>
-          ):(
+          {this.state.selectedChannelId ? (
+            <ChannelPanel channelId={this.state.selectedChannelId} />
+          ) : (
             <Jumbotron className="helloPanel">
               <h1>Welcome !</h1>
-              {this.props.userContext.currentUser ? (
-                <p>
-                  Select a channel or a user to the right to begin chatting with others.
-                </p>
-              ):(
+              {this.state.currentUser ? (
+                <p>Select a channel or a user to the right to begin chatting with others.</p>
+              ) : (
                 <>
-                  <p>
-                    Before sending messages to channels or to users, sign in.
-                  </p>
+                  <p>Before sending messages to channels or to users, sign in.</p>
                   <p>
                     <LinkContainer to="/login">
                       <Button variant="primary">Sign In</Button>
@@ -122,5 +120,3 @@ class Channel extends React.Component<Props, State> {
     );
   }
 }
-
-export default withAutoContext(Channel, ['userContext', 'webSocketContext']);

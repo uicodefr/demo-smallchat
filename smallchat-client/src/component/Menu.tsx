@@ -4,34 +4,29 @@ import { LinkContainer } from 'react-router-bootstrap';
 import Navbar from 'react-bootstrap/Navbar';
 import Nav from 'react-bootstrap/Nav';
 import Badge from 'react-bootstrap/Badge';
-import GlobalInfo from './menu/GlobalInfo';
-import { GlobalInfoContextType } from '../context/GlobalInfoContext';
-import { withAutoContext } from '../util/hoc.util';
-import { GlobalApi } from '../api/global.api';
-import { UserContextType } from '../context/UserContext';
-import { UserApi } from '../api/user.api';
+import { GlobalInfo } from './menu/GlobalInfo';
+import { GlobalService } from '../service/global/global.service';
+import { AuthenticationService } from '../service/auth/authentication.service';
+import { HasRoleUser } from './shared/security/HasRoleUser';
 
-interface Props {
-  globalInfoContext: GlobalInfoContextType,
-  userContext: UserContextType
-}
+interface Props {}
 interface State {
-  likes: number
+  likes: number;
 }
 
-class Menu extends React.Component<Props, State> {
-
-  private globalApi: GlobalApi;
-  private userApi: UserApi;
+export class Menu extends React.Component<Props, State> {
+  private globalService: GlobalService;
+  private authenticationService: AuthenticationService;
 
   constructor(props: Props) {
     super(props);
     this.state = {
-      likes: null,
+      likes: null
     };
 
-    this.globalApi = new GlobalApi(this.props.globalInfoContext);
-    this.userApi = new UserApi(this.props.globalInfoContext);
+    this.globalService = GlobalService.get();
+    this.authenticationService = AuthenticationService.get();
+
     this.handleClickLike = this.handleClickLike.bind(this);
     this.handleClickLogout = this.handleClickLogout.bind(this);
   }
@@ -41,7 +36,7 @@ class Menu extends React.Component<Props, State> {
   }
 
   loadLikes() {
-    this.globalApi.countLike().then(likesCount => {
+    this.globalService.countLike().then(likesCount => {
       this.setState({
         likes: likesCount.count
       });
@@ -49,15 +44,13 @@ class Menu extends React.Component<Props, State> {
   }
 
   handleClickLike(event) {
-    this.globalApi.addLike().then(() => {
+    this.globalService.addLike().then(() => {
       this.loadLikes();
     });
   }
 
   handleClickLogout(event) {
-    this.userApi.logout().then(() => {
-      this.props.userContext.setCurrentUser(null);
-    });
+    this.authenticationService.logout();
   }
 
   render() {
@@ -68,22 +61,22 @@ class Menu extends React.Component<Props, State> {
         </LinkContainer>
         <Nav className="mr-auto">
           <Nav.Link className="fa fa-thumbs-up" onClick={this.handleClickLike}></Nav.Link>
-          <Badge pill className="likeBadge">{this.state.likes}</Badge>
+          <Badge pill className="likeBadge">
+            {this.state.likes}
+          </Badge>
         </Nav>
         <Nav>
           <GlobalInfo />
-          {this.props.userContext.currentUser ? (
+          <HasRoleUser>
             <Nav.Link onClick={this.handleClickLogout}>Logout</Nav.Link>
-          ) : (
-              <LinkContainer to="/login">
-                <Nav.Link>Login</Nav.Link>
-              </LinkContainer>
-            )
-          }
+          </HasRoleUser>
+          <HasRoleUser not={true}>
+            <LinkContainer to="/login">
+              <Nav.Link>Login</Nav.Link>
+            </LinkContainer>
+          </HasRoleUser>
         </Nav>
-      </Navbar >
+      </Navbar>
     );
   }
 }
-
-export default withAutoContext(Menu, ['userContext', 'globalInfoContext']);

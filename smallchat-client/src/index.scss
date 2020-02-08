@@ -1,3 +1,5 @@
+// General
+
 html {
   height: 100%;
 }
@@ -5,13 +7,13 @@ html {
 body {
   height: 100%;
   margin: 0;
-  font-family: "Open Sans", sans-serif;
+  font-family: 'Open Sans', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 
   color: rgba(0, 0, 0, 0.92);
   background-color: #fafdfd;
-  background-image: url("./background.png");
+  background-image: url('./background.png');
   background-repeat: repeat;
 }
 
@@ -20,31 +22,31 @@ body {
 }
 
 code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New",
-    monospace;
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
 }
 
-/* Add Shadow */
+// Shadow
 
 .shadow2 {
-  box-shadow: 0 3px 1px -2px rgba(0,0,0,.2),0 2px 2px 0 rgba(0,0,0,.14),0 1px 5px 0 rgba(0,0,0,.12);
+  box-shadow: 0 3px 1px -2px rgba(0, 0, 0, 0.2), 0 2px 2px 0 rgba(0, 0, 0, 0.14), 0 1px 5px 0 rgba(0, 0, 0, 0.12);
 }
 .shadow4 {
-  box-shadow: 0 2px 4px -1px rgba(0,0,0,.2),0 4px 5px 0 rgba(0,0,0,.14),0 1px 10px 0 rgba(0,0,0,.12);
+  box-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.2), 0 4px 5px 0 rgba(0, 0, 0, 0.14), 0 1px 10px 0 rgba(0, 0, 0, 0.12);
 }
 .shadow6 {
-  box-shadow: 0 3px 5px -1px rgba(0,0,0,.2),0 6px 10px 0 rgba(0,0,0,.14),0 1px 18px 0 rgba(0,0,0,.12);
+  box-shadow: 0 3px 5px -1px rgba(0, 0, 0, 0.2), 0 6px 10px 0 rgba(0, 0, 0, 0.14), 0 1px 18px 0 rgba(0, 0, 0, 0.12);
 }
 .shadow8 {
-  box-shadow: 0 5px 5px -3px rgba(0,0,0,.2),0 8px 10px 1px rgba(0,0,0,.14),0 3px 14px 2px rgba(0,0,0,.12);
+  box-shadow: 0 5px 5px -3px rgba(0, 0, 0, 0.2), 0 8px 10px 1px rgba(0, 0, 0, 0.14), 0 3px 14px 2px rgba(0, 0, 0, 0.12);
 }
 
+// Bootstrap
 .card {
   @extend .shadow4;
 }
 .btn {
   @extend .shadow2;
-  &.toogleOn{
+  &.toogleOn {
     @extend .shadow8;
   }
 }
@@ -57,10 +59,32 @@ code {
 }
 
 .form-group.required .form-label:after {
-  content:" *";
-  color:red;
+  content: ' *';
+  color: red;
 }
 
-.list-group-item.active {
-  background-color: #007bffee;
+.list-group-item {
+  &.active {
+    background-color: #007bffee;
+  }
+  &.smallItem {
+    padding: 0.5rem 1rem;
+  }
+}
+
+// Transition
+
+.transitionFade-enter {
+  opacity: 0;
+}
+.transitionFade-enter-active {
+  opacity: 1;
+  transition: opacity 250ms ease-in;
+}
+.transitionFade-exit {
+  opacity: 1;
+}
+.transitionFade-exit-active {
+  opacity: 0;
+  transition: opacity 250ms ease-in;
 }

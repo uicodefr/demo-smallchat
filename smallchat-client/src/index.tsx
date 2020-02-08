@@ -1,26 +1,13 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import './index.scss';
-import App from './App';
 import * as serviceWorker from './serviceWorker';
 import { BrowserRouter } from 'react-router-dom';
-import { UserContextComponent } from './context/UserContext';
-import { GlobalInfoContextComponent } from './context/GlobalInfoContext';
-import WebSocketContextComponent from './context/WebSocketContext';
+import { App } from './App';
 
 ReactDOM.render(
   <BrowserRouter>
-
-    <GlobalInfoContextComponent>
-      <UserContextComponent>
-        <WebSocketContextComponent>
-
-          <App />
-
-        </WebSocketContextComponent>
-      </UserContextComponent>
-    </GlobalInfoContextComponent>
-
+    <App />
   </BrowserRouter>,
   document.getElementById('root')
 );

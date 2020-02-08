@@ -1,52 +1,48 @@
 import React from 'react';
 import './App.scss';
-import Menu from './component/Menu';
 import { Route, Switch } from 'react-router-dom';
-import Channel from './component/Channel';
-import Login from './component/Login';
 import NotFound from './component/NotFound';
-import { GlobalInfoContextType } from './context/GlobalInfoContext';
-import { UserContextType } from './context/UserContext';
-import { withAutoContext } from './util/hoc.util';
-import { UserApi } from './api/user.api';
+import { Channel } from './component/Channel';
+import { Login } from './component/Login';
+import { Menu } from './component/Menu';
+import { AuthenticationService } from './service/auth/authentication.service';
+import Spinner from 'react-bootstrap/Spinner';
+import { WebSocketService } from './service/chat/websocket.service';
 
-interface Props {
-  globalInfoContext: GlobalInfoContextType,
-  userContext: UserContextType
-}
+interface Props {}
 interface State {
-  init: boolean
+  init: boolean;
 }
 
 export class App extends React.Component<Props, State> {
-
-  private userApi: UserApi;
+  private authenticationService: AuthenticationService;
+  private webSocketService: WebSocketService;
 
   constructor(props: Props) {
     super(props);
+
+    this.authenticationService = AuthenticationService.get();
+    this.webSocketService = WebSocketService.get();
+
     this.state = {
       init: false
     };
-
-    this.userApi = new UserApi(this.props.globalInfoContext);
   }
 
   componentDidMount() {
-    this.userApi.getCurrentUser().then(user => {
-      if (user) {
-        this.props.userContext.setCurrentUser(user);
-      }
-    }).finally(() => {
+    this.authenticationService.loadUser().finally(() => {
       this.setState({
         init: true
       });
+      this.webSocketService.connectWebSocket();
     });
   }
 
   render() {
     if (!this.state.init) {
       return (
-        <div id="App">
+        <div id="App" className="init">
+          <Spinner animation="grow" variant="primary" />
         </div>
       );
     }
@@ -64,5 +60,3 @@ export class App extends React.Component<Props, State> {
     );
   }
 }
-
-export default withAutoContext(App, ['globalInfoContext', 'userContext']);

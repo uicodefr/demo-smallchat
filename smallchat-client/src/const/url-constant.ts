@@ -1,5 +1,4 @@
 export class UrlConstant {
-
   public static readonly BASE = process.env.REACT_APP_API_BASE_URL;
 
   public static readonly LOGIN = UrlConstant.BASE + '/login';
@@ -28,5 +27,4 @@ export class UrlConstant {
   public static readonly WebSocket = {
     CONNECTION: UrlConstant.BASE + '/websocket'
   };
-
 }

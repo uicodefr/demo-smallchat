@@ -4,37 +4,41 @@ import Card from 'react-bootstrap/Card';
 import Form from 'react-bootstrap/Form';
 import Button from 'react-bootstrap/Button';
 import ProgressBar from 'react-bootstrap/ProgressBar';
-import { UserContextType } from '../context/UserContext';
-import { withAutoContext } from '../util/hoc.util';
-import { UserApi } from '../api/user.api';
-import { GlobalInfoContextType } from '../context/GlobalInfoContext';
 import { AlertType } from '../const/alert-type.const';
 import { Redirect } from 'react-router-dom';
 import { Formik, FormikValues } from 'formik';
 import * as yup from 'yup';
+import { AuthenticationService } from '../service/auth/authentication.service';
+import { GlobalInfoService } from '../service/util/global-info.service';
+import { UserModel } from '../model/global/user.model';
+import { Subscription } from 'rxjs';
 
-interface Props {
-  userContext: UserContextType,
-  globalInfoContext: GlobalInfoContextType
-}
+interface Props {}
 
 interface State {
-  loginInProgress: boolean,
-  redirectAfterLogin: boolean
+  currentUser: UserModel;
+  loginInProgress: boolean;
+  redirectAfterLogin: boolean;
 }
 
-class Login extends React.Component<Props, State> {
+export class Login extends React.Component<Props, State> {
+  private authenticationService: AuthenticationService;
+  private globalInfoService: GlobalInfoService;
 
-  private userApi: UserApi;
+  private currentUserSubscription: Subscription;
 
   constructor(props: Props) {
     super(props);
+
+    this.authenticationService = AuthenticationService.get();
+    this.globalInfoService = GlobalInfoService.get();
+
     this.state = {
+      currentUser: this.authenticationService.getCurrentUser(),
       loginInProgress: false,
       redirectAfterLogin: false
     };
 
-    this.userApi = new UserApi(props.globalInfoContext);
     this.handleSubmit = this.handleSubmit.bind(this);
     this.handleClickLogout = this.handleClickLogout.bind(this);
   }
@@ -43,101 +47,112 @@ class Login extends React.Component<Props, State> {
     this.setState({
       redirectAfterLogin: false
     });
+
+    this.currentUserSubscription = this.authenticationService.getCurrentUserObservable().subscribe(currentUser => {
+      this.setState({ currentUser: currentUser });
+    });
   }
 
-  handleSubmit(formValues : FormikValues) {
+  componentWillUnmount() {
+    if (this.currentUserSubscription) {
+      this.currentUserSubscription.unsubscribe();
+    }
+  }
+
+  handleSubmit(formValues: FormikValues) {
     this.setState({
       loginInProgress: true
     });
 
     const username = formValues.username;
     const password = formValues.password;
-    this.userApi.login(username, password).then(user => {
+    this.authenticationService.login(username, password).then(user => {
       this.setState({
         loginInProgress: false
       });
 
       if (user) {
-        this.props.userContext.setCurrentUser(user);
         this.setState({
           redirectAfterLogin: true
-        })
+        });
       } else {
-        this.props.globalInfoContext.showAlert(AlertType.WARNING, 'Sign-in Failed : Incorrect username or password');
+        this.globalInfoService.showAlert(AlertType.WARNING, 'Sign-in Failed : Incorrect username or password');
       }
     });
   }
 
   handleClickLogout(event) {
-    this.userApi.logout().then(() => {
-      this.props.userContext.setCurrentUser(null);
-    });
+    this.authenticationService.logout();
   }
 
   render() {
     if (this.state.redirectAfterLogin) {
-      return (
-        <Redirect to="/" />
-      );
+      return <Redirect to="/" />;
     }
 
     const schema = yup.object({
       username: yup.string().required(),
       password: yup.string().required()
     });
-    const initialValues = {username: '', password: ''};
+    const initialValues = { username: '', password: '' };
 
     return (
       <div className="LoginScreen">
         <h1>Sign in</h1>
         <Card body>
-          {!this.props.userContext.currentUser ? (
-            <Formik
-              validationSchema={schema}
-              onSubmit={this.handleSubmit}
-              initialValues={initialValues}
-              >
-              {({
-                values,
-                handleChange,
-                handleBlur,
-                handleSubmit
-              }) => (
-              <Form className="loginForm" onSubmit={handleSubmit}>
-                <Form.Group>
-                  <Form.Label>Username</Form.Label>
-                  <Form.Control name="username" type="text" required
-                    value={values.username} onChange={handleChange} onBlur={handleBlur} />
-                </Form.Group>
-                <Form.Group>
-                  <Form.Label>Password</Form.Label>
-                  <Form.Control name="password" type="password" required
-                    value={values.password} onChange={handleChange} onBlur={handleBlur} />
-                </Form.Group>
-                {!this.state.loginInProgress ? (
-                  <div className="buttonZone">
-                    <Button variant="primary" type="submit"> LOGIN </Button>
-                  </div>
-                ) : (
+          {!this.state.currentUser ? (
+            <Formik validationSchema={schema} onSubmit={this.handleSubmit} initialValues={initialValues}>
+              {({ values, handleChange, handleBlur, handleSubmit }) => (
+                <Form className="loginForm" onSubmit={handleSubmit}>
+                  <Form.Group>
+                    <Form.Label>Username</Form.Label>
+                    <Form.Control
+                      name="username"
+                      type="text"
+                      required
+                      value={values.username}
+                      onChange={handleChange}
+                      onBlur={handleBlur}
+                    />
+                  </Form.Group>
+                  <Form.Group>
+                    <Form.Label>Password</Form.Label>
+                    <Form.Control
+                      name="password"
+                      type="password"
+                      required
+                      value={values.password}
+                      onChange={handleChange}
+                      onBlur={handleBlur}
+                    />
+                  </Form.Group>
+                  {!this.state.loginInProgress ? (
+                    <div className="buttonZone">
+                      <Button variant="primary" type="submit">
+                        {' '}
+                        LOGIN{' '}
+                      </Button>
+                    </div>
+                  ) : (
                     <ProgressBar animated now={100} />
                   )}
-              </Form>)}
+                </Form>
+              )}
             </Formik>
           ) : (
-              <div className="alreadyConnected">
-                You are connected as <em>{this.props.userContext.currentUser.username}</em>
-                <br />
-                <Button variant="danger" type="button" onClick={this.handleClickLogout}> LOGOUT </Button>
-              </div>
-            )}
+            <div className="alreadyConnected">
+              You are connected as <em>{this.state.currentUser.username}</em>
+              <br />
+              <Button variant="danger" type="button" onClick={this.handleClickLogout}>
+                {' '}
+                LOGOUT{' '}
+              </Button>
+            </div>
+          )}
         </Card>
 
-        <div className="help">
-          For the demo use the password : password
-        </div>
+        <div className="help">For the demo use the password : password</div>
       </div>
     );
   }
 }
-
-export default withAutoContext(Login, ['globalInfoContext', 'userContext']);

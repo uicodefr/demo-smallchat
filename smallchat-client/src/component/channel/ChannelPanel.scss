@@ -1,0 +1,47 @@
+@import '../../global.scss';
+
+.ChannelPanel {
+  height: calc(100% - #{$margin-large});
+  padding: 2rem;
+
+  .loading {
+    width: 150px;
+    margin: auto;
+    margin-top: 10%;
+    .spinner-border {
+      width: 150px;
+      height: 150px;
+    }
+  }
+
+  .noChannel {
+    text-align: center;
+    font-size: 120%;
+    margin-top: 10%;
+  }
+
+  .channelHeader {
+    height: 80px;
+    .channelId {
+      float: right;
+      margin-top: -1rem;
+      color: rgba(0, 0, 0, 0.7);
+      font-size: 0.9rem;
+    }
+    .channelDescription {
+      font-size: 1rem;
+      font-style: italic;
+    }
+  }
+
+  .channelShow {
+    height: calc(100% - 140px);
+    overflow-y: auto;
+    background-color: lightyellow;
+  }
+
+  .channelSend {
+    height: 60px;
+    background-color: lightcyan;
+  }
+}
