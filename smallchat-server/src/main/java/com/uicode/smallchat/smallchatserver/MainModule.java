@@ -10,9 +10,11 @@ import com.uicode.smallchat.smallchatserver.messaging.ConsumerDelegate;
 import com.uicode.smallchat.smallchatserver.messaging.ProducerDelegate;
 import com.uicode.smallchat.smallchatserver.messaging.impl.ConsumerDelegateImpl;
 import com.uicode.smallchat.smallchatserver.messaging.impl.ProducerDelegateImpl;
+import com.uicode.smallchat.smallchatserver.service.ChannelService;
 import com.uicode.smallchat.smallchatserver.service.ChatStateService;
 import com.uicode.smallchat.smallchatserver.service.GlobalService;
 import com.uicode.smallchat.smallchatserver.service.UserService;
+import com.uicode.smallchat.smallchatserver.service.impl.ChannelServiceImpl;
 import com.uicode.smallchat.smallchatserver.service.impl.ChatStateServiceImpl;
 import com.uicode.smallchat.smallchatserver.service.impl.GlobalServiceImpl;
 import com.uicode.smallchat.smallchatserver.service.impl.UserServiceImpl;
@@ -38,15 +40,16 @@ public class MainModule extends AbstractModule {
         bind(ConsumerDelegate.class).to(ConsumerDelegateImpl.class).in(Scopes.SINGLETON);
         bind(ProducerDelegate.class).to(ProducerDelegateImpl.class).in(Scopes.SINGLETON);
 
-        bind(LikeDao.class).to(LikeDaoImpl.class);
-        bind(ParameterDao.class).to(ParameterDaoImpl.class);
+        bind(LikeDao.class).to(LikeDaoImpl.class).in(Scopes.SINGLETON);
+        bind(ParameterDao.class).to(ParameterDaoImpl.class).in(Scopes.SINGLETON);
 
-        bind(ChatStateService.class).to(ChatStateServiceImpl.class);
-        bind(GlobalService.class).to(GlobalServiceImpl.class);
-        bind(UserService.class).to(UserServiceImpl.class);
+        bind(ChannelService.class).to(ChannelServiceImpl.class).in(Scopes.SINGLETON);
+        bind(ChatStateService.class).to(ChatStateServiceImpl.class).in(Scopes.SINGLETON);
+        bind(GlobalService.class).to(GlobalServiceImpl.class).in(Scopes.SINGLETON);
+        bind(UserService.class).to(UserServiceImpl.class).in(Scopes.SINGLETON);
 
         bind(WebSocketServer.class).to(WebSocketServerImpl.class).in(Scopes.SINGLETON);
-        bind(WebSocketMediator.class).to(WebSocketMediatorImpl.class);
+        bind(WebSocketMediator.class).to(WebSocketMediatorImpl.class).in(Scopes.SINGLETON);
     }
 
 }

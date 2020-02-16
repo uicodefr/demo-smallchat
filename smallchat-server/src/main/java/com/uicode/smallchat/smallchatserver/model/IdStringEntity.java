@@ -6,6 +6,13 @@ public class IdStringEntity {
 
     private String id;
 
+    public IdStringEntity() {
+    }
+
+    public IdStringEntity(IdStringEntity idStringEntity) {
+        this.id = idStringEntity.id;
+    }
+
     public String getId() {
         return id;
     }

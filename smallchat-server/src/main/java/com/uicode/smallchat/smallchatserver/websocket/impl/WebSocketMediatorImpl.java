@@ -1,6 +1,7 @@
 package com.uicode.smallchat.smallchatserver.websocket.impl;
 
 import com.google.inject.Inject;
+import com.uicode.smallchat.smallchatserver.service.ChannelService;
 import com.uicode.smallchat.smallchatserver.service.ChatStateService;
 import com.uicode.smallchat.smallchatserver.service.UserService;
 import com.uicode.smallchat.smallchatserver.websocket.WebSocketMediator;
@@ -15,21 +16,19 @@ public class WebSocketMediatorImpl implements WebSocketMediator {
 
     private final UserService userService;
     private final ChatStateService chatStateService;
+    private final ChannelService channelService;
 
     @Inject
     public WebSocketMediatorImpl(
         WebSocketServer webSocketServer,
         UserService userService,
-        ChatStateService chatStateService
+        ChatStateService chatStateService,
+        ChannelService channelService
     ) {
         this.webSocketServer = webSocketServer;
         this.userService = userService;
         this.chatStateService = chatStateService;
-    }
-
-    @Override
-    public <T> void send(String channel, T message) {
-        webSocketServer.send(channel, message);
+        this.channelService = channelService;
     }
 
     @Override
@@ -38,8 +37,23 @@ public class WebSocketMediatorImpl implements WebSocketMediator {
     }
 
     @Override
+    public void connectUserForSubscription(String userId, String channelId, boolean connection) {
+        webSocketServer.connectUserForSubscription(userId, channelId, connection);
+    }
+
+    @Override
     public void receiveUserConnection(String userId, boolean connection) {
         chatStateService.receiveUserConnection(userId, connection);
+    }
+
+    @Override
+    public <T> void send(String channelId, T message) {
+        webSocketServer.send(channelId, message);
+    }
+
+    @Override
+    public void receiveSendMessage(String userId, String channelId, String message) {
+        channelService.sendMessage(userId, channelId, message);
     }
 
 }

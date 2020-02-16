@@ -20,7 +20,7 @@ interface Props {
 interface State {
   chatState: ChatStateModel;
   currentUser: UserModel;
-  selectedChannelId: number;
+  selectedChannelId: string;
 }
 
 export class Channel extends React.Component<Props, State> {

@@ -17,6 +17,7 @@ import com.uicode.smallchat.smallchatserver.util.GeneralConst;
 import com.uicode.smallchat.smallchatserver.util.HttpStatus;
 import com.uicode.smallchat.smallchatserver.websocket.WebSocketMediator;
 import com.uicode.smallchat.smallchatserver.websocket.WebSocketMsg;
+import com.uicode.smallchat.smallchatserver.websocket.WebSocketMsg.WebSocketMsgString;
 import com.uicode.smallchat.smallchatserver.websocket.WebSocketServer;
 
 import io.netty.handler.codec.http.cookie.Cookie;
@@ -36,11 +37,15 @@ public class WebSocketServerImpl implements WebSocketServer {
 
     private final WebSocketMediator webSocketMediator;
 
+    private Map<String, Pair<ServerWebSocket, String>> connections;
+
     private Map<String, List<Pair<ServerWebSocket, String>>> subscriptions;
+
 
     @Inject
     public WebSocketServerImpl(WebSocketMediator webSocketMediator) {
         this.webSocketMediator = webSocketMediator;
+        this.connections = new HashMap<>();
         this.subscriptions = new HashMap<>();
     }
 
@@ -63,16 +68,34 @@ public class WebSocketServerImpl implements WebSocketServer {
             String userId = user.principal().getString(UserPayload.USERNAME_FIELD);
             Pair<ServerWebSocket, String> currentConnection = Pair.of(serverWebSocket, userId);
 
+            connections.put(userId, currentConnection);
             webSocketMediator.receiveUserConnection(userId, true);
-            getConnectionList(GeneralConst.CHAT_STATE_CHANNEL).add(currentConnection);
+            getSubscriptionList(WebSocketMsg.CHAT_STATE_CHANNEL).add(currentConnection);
 
             serverWebSocket.endHandler(endHandler -> {
+                connections.remove(userId);
                 webSocketMediator.receiveUserConnection(userId, false);
-                getConnectionList(GeneralConst.CHAT_STATE_CHANNEL).remove(currentConnection);
+                getSubscriptionList(WebSocketMsg.CHAT_STATE_CHANNEL).remove(currentConnection);
             });
 
             serverWebSocket.textMessageHandler(textHandler -> {
-                LOGGER.info(String.format("receive: %s", textHandler.trim()));
+                try {
+                    WebSocketMsg<String> receiveWebSocketMsg = Json.decodeValue(textHandler,
+                            WebSocketMsgString.class);
+
+                    if (receiveWebSocketMsg.getChannel().startsWith(WebSocketMsg.CHANNEL_PREFIX)) {
+                        webSocketMediator.receiveSendMessage(userId, receiveWebSocketMsg.getChannel(),
+                                receiveWebSocketMsg.getData());
+
+                    } else if (receiveWebSocketMsg.getChannel().equals(WebSocketMsg.PING_CHANNEL)) {
+                        // Do nothing on ping
+                    } else {
+                        LOGGER.error("Message unknown : {}", textHandler.trim());
+                    }
+
+                } catch (Exception exception) {
+                    LOGGER.error(String.format("Receive bad message : %s", textHandler.trim()), exception);
+                }
             });
 
             serverWebSocket.accept();
@@ -96,27 +119,45 @@ public class WebSocketServerImpl implements WebSocketServer {
             return result;
         }
 
-        this.webSocketMediator.authenticateUser(jwtTokenCookie.get().value()).future().setHandler(authenticateResult -> {
-            if (authenticateResult.failed()) {
-                result.fail(authenticateResult.cause());
-            } else {
-                result.complete(authenticateResult.result());
-            }
-        });
+        this.webSocketMediator.authenticateUser(jwtTokenCookie.get().value()).future()
+            .setHandler(authenticateResult -> {
+                if (authenticateResult.failed()) {
+                    result.fail(authenticateResult.cause());
+                } else {
+                    result.complete(authenticateResult.result());
+                }
+            });
 
         return result;
     }
 
-    private List<Pair<ServerWebSocket, String>> getConnectionList(String channel) {
-        return this.subscriptions.computeIfAbsent(channel, key -> new ArrayList<>());
+    private List<Pair<ServerWebSocket, String>> getSubscriptionList(String channelId) {
+        return this.subscriptions.computeIfAbsent(channelId, key -> new ArrayList<>());
     }
 
     @Override
-    public <T> void send(String channel, T message) {
-        getConnectionList(channel).forEach(connection -> {
+    public void connectUserForSubscription(String userId, String channelId, boolean connection) {
+        Pair<ServerWebSocket, String> userConnection = connections.get(userId);
+        if (userConnection == null) {
+            LOGGER.error("No userConnection for userId : {}", userId);
+            return;
+        }
+
+        if (connection) {
+            // Connect
+            getSubscriptionList(channelId).add(userConnection);
+        } else {
+            // Disconnect
+            getSubscriptionList(channelId).remove(userConnection);
+        }
+    }
+
+    @Override
+    public <T> void send(String channelId, T message) {
+        getSubscriptionList(channelId).forEach(connection -> {
             ServerWebSocket serverWebSocket = connection.getLeft();
-            if (! serverWebSocket.isClosed()) {
-                serverWebSocket.writeTextMessage(Json.encode(WebSocketMsg.of(channel, message)));
+            if (!serverWebSocket.isClosed()) {
+                serverWebSocket.writeTextMessage(Json.encode(WebSocketMsg.of(channelId, message)));
             }
         });
     }

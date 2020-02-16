@@ -11,24 +11,24 @@ import io.vertx.core.Vertx;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 
-public class ChatRouter {
+public class ChatStateRouter {
 
     private final Vertx vertx;
     private final ChatStateService chatStateService;
 
     @Inject
-    public ChatRouter(Vertx vertx, ChatStateService chatStateService) {
+    public ChatStateRouter(Vertx vertx, ChatStateService chatStateService) {
         this.vertx = vertx;
         this.chatStateService = chatStateService;
     }
 
     public void mountSubRouter(Router mainRouter) {
         Router chatStateRouter = Router.router(vertx);
-        chatStateRouter.get("/state").handler(this::getChatState);
+        chatStateRouter.get("/").handler(this::getChatState);
         chatStateRouter.post("/channels").handler(this::createChannel);
         chatStateRouter.patch("/channels/:id").handler(this::updateChannel);
         chatStateRouter.delete("/channels/:id").handler(this::deleteChannel);
-        mainRouter.mountSubRouter("/chat", chatStateRouter);
+        mainRouter.mountSubRouter("/chat-state", chatStateRouter);
     }
 
     private void getChatState(RoutingContext requestHandler) {

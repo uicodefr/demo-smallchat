@@ -8,7 +8,7 @@ import org.apache.kafka.common.errors.TopicExistsException;
 
 import com.google.inject.Inject;
 import com.uicode.smallchat.smallchatserver.messaging.ProducerDelegate;
-import com.uicode.smallchat.smallchatserver.model.message.AbstractMessage;
+import com.uicode.smallchat.smallchatserver.model.messagingnotice.AbstractNotice;
 import com.uicode.smallchat.smallchatserver.util.ConfigUtil;
 
 import io.vertx.core.Promise;
@@ -48,6 +48,7 @@ public class ProducerDelegateImpl implements ProducerDelegate {
 
     private Promise<Void> createTopic(String topic) {
         Promise<Void> promise = Promise.promise();
+        // We check before in the list "createdTopics"
         if (createdTopics.contains(topic)) {
             promise.complete();
             return promise;
@@ -55,7 +56,7 @@ public class ProducerDelegateImpl implements ProducerDelegate {
 
         NewTopic newTopic = new NewTopic(topic, TOPIC_NUM_PARTITION, TOPIC_REPLICATION_FACTOR);
         kafkaAdmin.createTopics(Collections.singletonList(newTopic), creationHandler -> {
-            // TopicExistsException is a error considered normal
+            // TopicExistsException is a error considered as normal
             if (creationHandler.failed() && !(creationHandler.cause() instanceof TopicExistsException)) {
                 promise.fail(creationHandler.cause());
             } else {
@@ -67,7 +68,7 @@ public class ProducerDelegateImpl implements ProducerDelegate {
     }
 
     @Override
-    public Promise<RecordMetadata> publish(AbstractMessage message) {
+    public Promise<RecordMetadata> publish(AbstractNotice message) {
         Promise<RecordMetadata> promise = Promise.promise();
         this.initProducer();
 

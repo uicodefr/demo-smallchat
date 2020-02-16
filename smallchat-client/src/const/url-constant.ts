@@ -18,10 +18,15 @@ export class UrlConstant {
     CURRENT_USER: UrlConstant.USER_PREFIX + '/me'
   };
 
-  private static readonly CHAT_PREFIX = UrlConstant.BASE + '/chat';
-  public static readonly Chat = {
-    STATE: UrlConstant.CHAT_PREFIX + '/state',
-    CHANNEL: UrlConstant.CHAT_PREFIX + '/channels'
+  private static readonly CHAT_STATE_PREFIX = UrlConstant.BASE + '/chat-state';
+  public static readonly ChatState = {
+    STATE: UrlConstant.CHAT_STATE_PREFIX + '/',
+    CHANNEL: UrlConstant.CHAT_STATE_PREFIX + '/channels'
+  };
+
+  private static readonly CHANNEL_PREFIX = UrlConstant.BASE + '/channels';
+  public static readonly Channel = {
+    GET: UrlConstant.CHANNEL_PREFIX
   };
 
   public static readonly WebSocket = {

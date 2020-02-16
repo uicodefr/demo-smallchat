@@ -7,6 +7,7 @@ import org.apache.logging.log4j.Logger;
 import com.google.inject.Inject;
 import com.uicode.smallchat.smallchatserver.exception.HttpStatusReturn;
 import com.uicode.smallchat.smallchatserver.model.global.ErrorResponse;
+import com.uicode.smallchat.smallchatserver.model.user.UserPayload;
 import com.uicode.smallchat.smallchatserver.util.HttpStatus;
 
 import io.vertx.core.Promise;
@@ -27,18 +28,23 @@ public class MainRouter {
 
     private final GlobalRouter globalRouter;
     private final UserRouter userRouter;
-    private final ChatRouter chatRouter;
+    private final ChatStateRouter chatStateRouter;
+    private final ChannelRouter channelRouter;
 
     @Inject
     public MainRouter(
         Vertx vertx,
-        GlobalRouter globalRouter, UserRouter userRouter, ChatRouter chatRouter
+        GlobalRouter globalRouter,
+        UserRouter userRouter,
+        ChatStateRouter chatStateRouter,
+        ChannelRouter channelRouter
     ) {
         router = Router.router(vertx);
 
         this.globalRouter = globalRouter;
         this.userRouter = userRouter;
-        this.chatRouter = chatRouter;
+        this.chatStateRouter = chatStateRouter;
+        this.channelRouter = channelRouter;
     }
 
     public Router getRouter() {
@@ -59,7 +65,9 @@ public class MainRouter {
 
         userRouter.mountSubRouter(router);
         globalRouter.mountSubRouter(router);
-        chatRouter.mountSubRouter(router);
+        chatStateRouter.mountSubRouter(router);
+        channelRouter.mountSubRouter(router);
+        LOGGER.info("Routers mounted");
     }
 
     private void addErrorHandlers(Router router) {
@@ -117,6 +125,10 @@ public class MainRouter {
                 requestHandler.response().end();
             }
         });
+    }
+
+    public static String getUserId(RoutingContext requestHandler) {
+        return requestHandler.user().principal().getString(UserPayload.USERNAME_FIELD);
     }
 
 }

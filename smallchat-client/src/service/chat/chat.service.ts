@@ -16,18 +16,18 @@ export class ChatService {
   }
 
   public getChatState(): Promise<ChatStateModel> {
-    return this.restClientService.get(UrlConstant.Chat.STATE);
+    return this.restClientService.get(UrlConstant.ChatState.STATE);
   }
 
   public createChannel(channel: ChannelModel): Promise<ChannelModel> {
-    return this.restClientService.post(UrlConstant.Chat.CHANNEL, channel);
+    return this.restClientService.post(UrlConstant.ChatState.CHANNEL, channel);
   }
 
   public updateChannel(channel: ChannelModel): Promise<ChannelModel> {
-    return this.restClientService.patch(UrlConstant.Chat.CHANNEL + '/' + channel.id, channel);
+    return this.restClientService.patch(UrlConstant.ChatState.CHANNEL + '/' + channel.id, channel);
   }
 
   public deleteChannel(channelId: string): Promise<void> {
-    return this.restClientService.delete(UrlConstant.Chat.CHANNEL + '/' + channelId);
+    return this.restClientService.delete(UrlConstant.ChatState.CHANNEL + '/' + channelId);
   }
 }

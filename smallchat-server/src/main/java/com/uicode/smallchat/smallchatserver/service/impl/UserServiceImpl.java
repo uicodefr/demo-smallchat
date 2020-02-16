@@ -4,6 +4,8 @@ import java.util.Collections;
 import java.util.Optional;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import com.google.inject.Inject;
 import com.uicode.smallchat.smallchatserver.model.user.UserLoginData;
@@ -20,6 +22,8 @@ import io.vertx.ext.auth.jwt.JWTAuthOptions;
 import io.vertx.ext.jwt.JWTOptions;
 
 public class UserServiceImpl implements UserService {
+    
+    private static final Logger LOGGER = LogManager.getLogger(UserServiceImpl.class);
 
     // XXX Just for the demo
     private static final String PASSWORD_POC = "password";
@@ -49,6 +53,7 @@ public class UserServiceImpl implements UserService {
         Promise<Optional<UserLoginData>> promise = Promise.promise();
         // XXX No true authentication : just a password equals to password
         if (StringUtils.isBlank(username) || !PASSWORD_POC.equals(password)) {
+            LOGGER.info("Login failed for {}", username);
             promise.complete(Optional.empty());
 
         } else {
@@ -61,6 +66,8 @@ public class UserServiceImpl implements UserService {
             UserLoginData userLoginData = new UserLoginData();
             userLoginData.setJwtToken(jwtToken);
             userLoginData.setUserPayload(userPayload);
+
+            LOGGER.info("Login successfull for {}", username);
             promise.complete(Optional.of(userLoginData));
         }
         return promise;
@@ -73,8 +80,10 @@ public class UserServiceImpl implements UserService {
 
         getJwtProvider().authenticate(authInfo, authResult -> {
             if (authResult.succeeded()) {
+                LOGGER.debug("Authenticate successfull");
                 promise.complete(authResult.result());
             } else {
+                LOGGER.debug("Authenticate failed");
                 promise.fail(authResult.cause());
             }
         });

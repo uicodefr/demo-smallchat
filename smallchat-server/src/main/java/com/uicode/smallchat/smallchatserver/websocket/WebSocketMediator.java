@@ -5,10 +5,14 @@ import io.vertx.ext.auth.User;
 
 public interface WebSocketMediator {
 
-    <T> void send(String channel, T message);
-
     Promise<User> authenticateUser(String jwtToken);
 
+    void connectUserForSubscription(String userId, String channelId, boolean connection);
+
     void receiveUserConnection(String userId, boolean connection);
+
+    <T> void send(String channelId, T message);
+
+    void receiveSendMessage(String userId, String channelId, String message);
 
 }

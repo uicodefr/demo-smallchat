@@ -1,14 +1,14 @@
-package com.uicode.smallchat.smallchatserver.model.message;
+package com.uicode.smallchat.smallchatserver.model.messagingnotice;
 
 import com.uicode.smallchat.smallchatserver.model.chat.internal.ChatStateInternal;
 
-public class ChatStateMessage extends AbstractMessage {
+public class ChatStateNotice extends AbstractNotice {
 
-    public static final String TOPIC = "chat_state";
+    public static final String TOPIC = "chat-state";
 
     private ChatStateInternal chatState;
 
-    public ChatStateMessage() {
+    public ChatStateNotice() {
         super(TOPIC);
     }
 

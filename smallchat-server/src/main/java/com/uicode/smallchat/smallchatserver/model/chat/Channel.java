@@ -5,6 +5,15 @@ public class Channel extends AbstractStateEntity {
     private String name;
     private String description;
 
+    public Channel() {
+    }
+
+    public Channel(Channel channel) {
+        super(channel);
+        this.name = channel.name;
+        this.description = channel.description;
+    }
+
     public String getName() {
         return name;
     }

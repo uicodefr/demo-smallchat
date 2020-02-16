@@ -1,6 +1,15 @@
 package com.uicode.smallchat.smallchatserver.websocket;
 
 public class WebSocketMsg<T> {
+    
+    public static class WebSocketMsgString extends WebSocketMsg<String> {
+    }
+
+    public static final String CHANNEL_PREFIX = "#";
+    public static final String USER_PREFIX = "@";
+    public static final String CHAT_STATE_CHANNEL = "state";
+    public static final String PING_CHANNEL = "ping";
+
 
     private String channel;
 

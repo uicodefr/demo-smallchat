@@ -6,6 +6,14 @@ public abstract class AbstractStateEntity extends IdStringEntity {
 
     private boolean delete;
 
+    public AbstractStateEntity() {
+    }
+
+    public AbstractStateEntity(AbstractStateEntity abstractStateEntity) {
+        super(abstractStateEntity);
+        this.delete = abstractStateEntity.delete;
+    }
+
     public boolean isDelete() {
         return delete;
     }

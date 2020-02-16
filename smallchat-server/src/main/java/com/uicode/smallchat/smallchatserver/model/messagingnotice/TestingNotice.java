@@ -1,16 +1,16 @@
-package com.uicode.smallchat.smallchatserver.model.message;
+package com.uicode.smallchat.smallchatserver.model.messagingnotice;
 
-public class TestingMessage extends AbstractMessage {
+public class TestingNotice extends AbstractNotice {
 
     public static final String TOPIC = "test";
-    
+
     private String value;
 
-    public TestingMessage() {
+    public TestingNotice() {
         super(TOPIC);
     }
 
-    public TestingMessage(String value) {
+    public TestingNotice(String value) {
         this();
         this.value = value;
     }

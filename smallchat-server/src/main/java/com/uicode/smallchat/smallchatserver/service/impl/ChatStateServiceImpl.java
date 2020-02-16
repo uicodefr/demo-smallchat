@@ -6,6 +6,8 @@ import java.util.Map;
 import java.util.function.Function;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import com.google.inject.Inject;
 import com.uicode.smallchat.smallchatserver.exception.NotFoundException;
@@ -17,14 +19,16 @@ import com.uicode.smallchat.smallchatserver.model.chat.Channel;
 import com.uicode.smallchat.smallchatserver.model.chat.ChatState;
 import com.uicode.smallchat.smallchatserver.model.chat.ChatUser;
 import com.uicode.smallchat.smallchatserver.model.chat.internal.ChatStateInternal;
-import com.uicode.smallchat.smallchatserver.model.message.ChatStateMessage;
+import com.uicode.smallchat.smallchatserver.model.messagingnotice.ChatStateNotice;
 import com.uicode.smallchat.smallchatserver.service.ChatStateService;
-import com.uicode.smallchat.smallchatserver.util.GeneralConst;
 import com.uicode.smallchat.smallchatserver.websocket.WebSocketMediator;
+import com.uicode.smallchat.smallchatserver.websocket.WebSocketMsg;
 
 import io.vertx.core.Promise;
 
 public class ChatStateServiceImpl implements ChatStateService {
+
+    private static final Logger LOGGER = LogManager.getLogger(ChatStateServiceImpl.class);
 
     private final ProducerDelegate producerDelegate;
     private final ConsumerDelegate consumerDelegate;
@@ -51,10 +55,12 @@ public class ChatStateServiceImpl implements ChatStateService {
     public Promise<ChatState> getChatState() {
         Promise<ChatState> promise = Promise.promise();
         getChatStateInternal().future().map(ChatStateInternal::toChatState).setHandler(promise::handle);
+        LOGGER.info("Get ChatState");
         return promise;
     }
 
-    private Promise<ChatStateInternal> getChatStateInternal() {
+    @Override
+    public Promise<ChatStateInternal> getChatStateInternal() {
         Promise<ChatStateInternal> promise = Promise.promise();
         if (chatStateInt != null) {
             promise.complete(chatStateInt);
@@ -77,19 +83,23 @@ public class ChatStateServiceImpl implements ChatStateService {
             return promise;
         }
 
-        subscription = consumerDelegate.subscribe(ChatStateMessage.TOPIC, ChatStateMessage.class, packageMsg -> {
-            mergeChatState(packageMsg.getMessage().getChatState());
+        subscription = consumerDelegate.subscribe(ChatStateNotice.TOPIC, ChatStateNotice.class, packageMsg -> {
+            LOGGER.trace("Receive new ChatState from Kafka");
+            mergeChatState(packageMsg.getNotice().getChatState());
             // Publish the new ChatState to the Websocket
-            webSocketMediator.send(GeneralConst.CHAT_STATE_CHANNEL, chatStateInt.toChatState());
-        });
+            webSocketMediator.send(WebSocketMsg.CHAT_STATE_CHANNEL, chatStateInt.toChatState());
 
-        consumerDelegate.resendLastMessage(ChatStateMessage.TOPIC, 1).future().setHandler(resendResult -> {
-            if (resendResult.failed()) {
-                promise.fail(resendResult.cause());
-            } else {
-                promise.complete();
-            }
-        });
+        }, subscribeCompletion -> 
+            // Resend Last Message after subscription
+            consumerDelegate.resendLastMessages(ChatStateNotice.TOPIC, 1).future().setHandler(resendResult -> {
+                if (resendResult.failed()) {
+                    promise.fail(resendResult.cause());
+                } else {
+                    promise.complete();
+                }
+            })
+        );
+
         return promise;
     }
 
@@ -136,7 +146,7 @@ public class ChatStateServiceImpl implements ChatStateService {
             T resultOnComplete = action.apply(newChatState);
 
             // Publish the newChatState on Kafka
-            ChatStateMessage message = new ChatStateMessage();
+            ChatStateNotice message = new ChatStateNotice();
             message.setChatState(newChatState);
             producerDelegate.publish(message).future().setHandler(publishResult -> {
                 if (publishResult.failed()) {
@@ -151,6 +161,7 @@ public class ChatStateServiceImpl implements ChatStateService {
 
     @Override
     public Promise<Channel> createChannel(Channel newChannel) {
+        LOGGER.info("Create channel with id : {}", newChannel.getId());
         return changeChatState(newChatState -> {
             newChannel.setDelete(false);
             newChatState.getChannels().put(newChannel.getId(), newChannel);
@@ -160,6 +171,7 @@ public class ChatStateServiceImpl implements ChatStateService {
 
     @Override
     public Promise<Void> deleteChannel(String channelId) {
+        LOGGER.info("Delete channel with id : {}", channelId);
         return changeChatState(newChatState -> {
             Channel channelToDelete = new Channel();
             channelToDelete.setId(channelId);
@@ -171,6 +183,7 @@ public class ChatStateServiceImpl implements ChatStateService {
 
     @Override
     public Promise<Channel> updateChannel(String channelId, Channel channel) {
+        LOGGER.info("Update channel with id : {}", channelId);
         return changeChatState(newChatState -> {
             Channel channelToUpdate = newChatState.getChannels().get(channelId);
             if (channelToUpdate == null) {
@@ -189,6 +202,7 @@ public class ChatStateServiceImpl implements ChatStateService {
 
     @Override
     public void receiveUserConnection(String userId, boolean connection) {
+        LOGGER.info("Received UserConnection in the chat : {} (connection : {})", userId, connection);
         ChatUser chatUser = new ChatUser();
         chatUser.setId(userId);
         chatUser.setDelete(!connection);

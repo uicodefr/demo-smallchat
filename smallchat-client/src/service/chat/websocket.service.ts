@@ -1,6 +1,5 @@
 import { Observable, BehaviorSubject } from 'rxjs';
 import { ChatStateModel } from '../../model/chat/chat-state.model';
-import { GlobalConstant } from '../../const/global-constant';
 import { WebsocketMsgModel } from '../../model/chat/websocket-msg.model';
 import { ChatService } from './chat.service';
 import { ChannelFullModel } from '../../model/channel/channel-full.model';
@@ -48,14 +47,15 @@ export class WebSocketService {
     };
 
     this.webSocket.onopen = eventOpen => {
-      this.webSocket.send('ping');
+      const webSocketMsg = { channel: 'ping', data: 'ping' } as WebsocketMsgModel;
+      this.webSocket.send(JSON.stringify(webSocketMsg));
     };
 
     this.webSocket.onmessage = eventMessage => {
       const message = JSON.parse(eventMessage.data) as WebsocketMsgModel;
-      if (message.channel.startsWith('#')) {
+      if (message.channel.startsWith(WebsocketMsgModel.CHANNEL_PREFIX)) {
         console.warn('Receive message from channel' + message.data);
-      } else if (message.channel === GlobalConstant.CHAT_STATE_CHANNEL) {
+      } else if (message.channel === WebsocketMsgModel.CHAT_STATE_CHANNEL) {
         this.chatStateSubject.next(message.data);
       } else {
         console.error('Message unknown : ' + message);
@@ -65,5 +65,10 @@ export class WebSocketService {
     this.webSocket.onclose = eventClose => {
       console.info('WebSocket closed');
     };
+  }
+
+  public sendMessage(channel: string, message: string) {
+    const webSocketMsg = { channel: channel, data: message } as WebsocketMsgModel;
+    this.webSocket.send(JSON.stringify(webSocketMsg));
   }
 }

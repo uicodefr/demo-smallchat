@@ -1,23 +1,23 @@
 package com.uicode.smallchat.smallchatserver.messaging;
 
-import com.uicode.smallchat.smallchatserver.model.message.AbstractMessage;
+import com.uicode.smallchat.smallchatserver.model.messagingnotice.AbstractNotice;
 
 import io.vertx.core.eventbus.MessageConsumer;
 import io.vertx.core.json.JsonObject;
 
-public class PackageMsg<T extends AbstractMessage> {
+public class PackageMsgNotice<T extends AbstractNotice> {
 
-    private T message;
+    private T notice;
 
     private MessageConsumer<JsonObject> consumer;
 
-    public PackageMsg(T message, MessageConsumer<JsonObject> consumer) {
-        this.message = message;
+    public PackageMsgNotice(T notice, MessageConsumer<JsonObject> consumer) {
+        this.notice = notice;
         this.consumer = consumer;
     }
 
-    public T getMessage() {
-        return message;
+    public T getNotice() {
+        return notice;
     }
 
     public void unsubscribe() {

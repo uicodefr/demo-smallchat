@@ -3,6 +3,9 @@ package com.uicode.smallchat.smallchatserver.service.impl;
 import java.util.Date;
 import java.util.Optional;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import com.google.inject.Inject;
 import com.uicode.smallchat.smallchatserver.dao.global.LikeDao;
 import com.uicode.smallchat.smallchatserver.dao.global.ParameterDao;
@@ -11,7 +14,7 @@ import com.uicode.smallchat.smallchatserver.messaging.ProducerDelegate;
 import com.uicode.smallchat.smallchatserver.model.IdLongEntity;
 import com.uicode.smallchat.smallchatserver.model.global.CountLikes;
 import com.uicode.smallchat.smallchatserver.model.global.GlobalStatus;
-import com.uicode.smallchat.smallchatserver.model.message.TestingMessage;
+import com.uicode.smallchat.smallchatserver.model.messagingnotice.TestingNotice;
 import com.uicode.smallchat.smallchatserver.service.GlobalService;
 import com.uicode.smallchat.smallchatserver.util.ConfigUtil;
 import com.uicode.smallchat.smallchatserver.util.parameter.ParameterConst;
@@ -22,6 +25,8 @@ import io.vertx.core.Future;
 import io.vertx.core.Promise;
 
 public class GlobalServiceImpl implements GlobalService {
+
+    private static final Logger LOGGER = LogManager.getLogger(GlobalServiceImpl.class);
 
     private static final String VERSION = "0.0.1";
     private static final Date UPDATE = new Date();
@@ -72,17 +77,18 @@ public class GlobalServiceImpl implements GlobalService {
             testDaoFuture.result().ifPresent(status::setStatus);
             promise.complete(status);
         });
+        LOGGER.info("Global Status asked");
         return promise;
     }
 
     private Promise<String> testMessaging() {
         Promise<String> promise = Promise.promise();
-        consumerDelegate.subscribe(TestingMessage.TOPIC, TestingMessage.class, packageMsg -> {
+        consumerDelegate.subscribe(TestingNotice.TOPIC, TestingNotice.class, packageMsg -> {
             packageMsg.unsubscribe();
-            promise.complete(packageMsg.getMessage().getValue());
+            promise.complete(packageMsg.getNotice().getValue());
         });
 
-        producerDelegate.publish(new TestingMessage("kafka")).future().setHandler(recordResult -> {
+        producerDelegate.publish(new TestingNotice("kafka")).future().setHandler(recordResult -> {
             if (recordResult.failed()) {
                 promise.tryFail(recordResult.cause());
             }
@@ -96,6 +102,7 @@ public class GlobalServiceImpl implements GlobalService {
         likeDao.count().future().map(count -> {
             CountLikes countLikes = new CountLikes();
             countLikes.setCount(count);
+            LOGGER.info("CountLikes return the value : {}", count);
             return countLikes;
         }).setHandler(promise::handle);
         return promise;
@@ -121,6 +128,7 @@ public class GlobalServiceImpl implements GlobalService {
             Long maxLike = ParameterUtil.getLong(maxParamFuture.result(), 0l);
 
             if (countLikesFuture.result() > maxLike) {
+                LOGGER.warn("AddLike : the maximum of likes is reached");
                 promise.complete(result);
                 return;
             }
@@ -132,6 +140,7 @@ public class GlobalServiceImpl implements GlobalService {
                 }
 
                 result.setId(insertResult.result());
+                LOGGER.info("AddLike successful");
                 promise.complete(result);
             });
         });
