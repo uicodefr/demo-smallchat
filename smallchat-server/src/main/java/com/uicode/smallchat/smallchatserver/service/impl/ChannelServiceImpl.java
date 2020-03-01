@@ -19,8 +19,8 @@ import com.uicode.smallchat.smallchatserver.model.chat.Channel;
 import com.uicode.smallchat.smallchatserver.model.messagingnotice.ChannelNotice;
 import com.uicode.smallchat.smallchatserver.service.ChannelService;
 import com.uicode.smallchat.smallchatserver.service.ChatStateService;
+import com.uicode.smallchat.smallchatserver.util.GeneralConst;
 import com.uicode.smallchat.smallchatserver.websocket.WebSocketMediator;
-import com.uicode.smallchat.smallchatserver.websocket.WebSocketMsg;
 
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
@@ -51,29 +51,36 @@ public class ChannelServiceImpl implements ChannelService {
     }
 
     private void initSubscribe() {
-        consumerDelegate.subscribe(ChannelNotice.TOPIC, ChannelNotice.class, packageMsg -> {
-            LOGGER.trace("Receive new ChannelNotice from Kafka");
+        // Subscribe on all channels "channel-.*"
+        consumerDelegate.subscribe(ChannelNotice.TOPIC + ".*", ChannelNotice.class, packageMsg -> {
+            LOGGER.debug("Receive new ChannelNotice");
             if (packageMsg.getNotice() == null || packageMsg.getNotice().getChannelId() == null) {
                 LOGGER.error("Invalid ChannelNotice");
             } else {
-                webSocketMediator.send(packageMsg.getNotice().getChannelId(),
+                webSocketMediator.send(getSubscriptionId(packageMsg.getNotice().getChannelId()),
                         packageMsg.getNotice().getChannelMessage());
             }
         });
     }
 
+    private String getSubscriptionId(String channelId) {
+        return GeneralConst.SUBSCRIPTION_CHANNEL_PREFIX + channelId;
+    }
+
     @Override
     public Promise<ChannelFull> connect(String userId, String channelId) {
-        String channelSubId = WebSocketMsg.CHANNEL_PREFIX + channelId;
-        webSocketMediator.connectUserForSubscription(userId, channelSubId, true);
+        consumerDelegate.refreshSubscribe(ChannelNotice.TOPIC + ".*");
+
+        LOGGER.info("User {} connect to {}", userId, channelId);
+        webSocketMediator.connectUserForSubscription(userId, getSubscriptionId(channelId), true);
         return getChannel(channelId);
     }
 
     @Override
     public Promise<Void> disconnect(String userId, String channelId) {
+        LOGGER.info("User {} disconnect to {}", userId, channelId);
         Promise<Void> promise = Promise.promise();
-        String channelSubId = WebSocketMsg.CHANNEL_PREFIX + channelId;
-        webSocketMediator.connectUserForSubscription(userId, channelSubId, false);
+        webSocketMediator.connectUserForSubscription(userId, getSubscriptionId(channelId), false);
         promise.complete();
         return promise;
     }
@@ -86,8 +93,10 @@ public class ChannelServiceImpl implements ChannelService {
             .map(chatStateInternal -> chatStateInternal.getChannels().get(channelId));
 
         String topic = ChannelNotice.getTopicForChannelId(channelId);
-        Future<List<ChannelMessage>> messagesFuture = consumerDelegate.getLastMessages(topic, 20, ChannelNotice.class).future()
-            .map(channelNoticeList -> channelNoticeList.stream().map(ChannelNotice::getChannelMessage).collect(Collectors.toList()));
+        Future<List<ChannelMessage>> messagesFuture = consumerDelegate
+            .getLastMessages(topic, GeneralConst.CHANNEL_MESSAGES_TO_SEND, ChannelNotice.class).future()
+            .map(channelNoticeList -> channelNoticeList.stream().map(ChannelNotice::getChannelMessage)
+                    .collect(Collectors.toList()));
 
         CompositeFuture.all(channelFuture, messagesFuture).setHandler(compositeResult -> {
             if (compositeResult.failed()) {
@@ -108,21 +117,20 @@ public class ChannelServiceImpl implements ChannelService {
 
     @Override
     public ChannelMessage sendMessage(String userId, String channelId, String message) {
-        String correctedChannelId = channelId.replace("#", "");
-        
         ChannelNotice channelNotice = new ChannelNotice();
-        channelNotice.setChannelId(correctedChannelId);
+        channelNotice.setChannelId(channelId);
 
         ChannelMessage channelMessage = new ChannelMessage();
         String messageId = UUID.randomUUID().toString();
         channelMessage.setId(messageId);
+        channelMessage.setChannelId(channelId);
         channelMessage.setUser(userId);
         channelMessage.setMessage(message);
         channelMessage.setDate(new Date());
         channelMessage.setType(Type.MESSAGE);
         channelNotice.setChannelMessage(channelMessage);
 
-        LOGGER.info("Send message '{}' on the channel '{}' by '{}'", messageId, correctedChannelId, userId);
+        LOGGER.info("Send message '{}' on the channel '{}' by '{}'", messageId, channelId, userId);
         producerDelegate.publish(channelNotice);
         return channelMessage;
     }

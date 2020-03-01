@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.regex.Pattern;
 import java.util.Set;
 import java.util.UUID;
 
@@ -39,38 +40,43 @@ public class ConsumerDelegateImpl implements ConsumerDelegate {
     private static final String PREFIX_EVENT_BUS = "consumer.";
 
     private final Vertx vertx;
-    private KafkaConsumer<String, JsonObject> globalConsumer;
+    private Map<String, KafkaConsumer<String, JsonObject>> globalConsumerMap = new HashMap<>();
 
     @Inject
     public ConsumerDelegateImpl(Vertx vertx) {
         this.vertx = vertx;
     }
 
-    private void initGlobalConsumer() {
-        if (globalConsumer != null) {
-            return;
-        }
-        globalConsumer = KafkaConsumer.create(vertx, ConfigUtil.getConfig().getKafkaConsumer());
-        globalConsumer.handler(this::handleConsumer);
+    private KafkaConsumer<String, JsonObject> getConsumer(String topic) {
+        KafkaConsumer<String, JsonObject> consumerForTopic = globalConsumerMap.computeIfAbsent(topic, key ->
+            KafkaConsumer.<String, JsonObject>create(vertx, ConfigUtil.getConfig().getKafkaConsumer())
+                .handler(consumerRecord -> this.handleConsumer(topic, consumerRecord))
+        );
+        return consumerForTopic;
     }
 
-    private void handleConsumer(KafkaConsumerRecord<String, JsonObject> consumerRecord) {
-        vertx.eventBus().publish(getBaseTopicEventBus(consumerRecord.topic()), consumerRecord.value());
+    private void handleConsumer(String topic, KafkaConsumerRecord<String, JsonObject> consumerRecord) {
+        LOGGER.trace("Received new record from topic : {}", consumerRecord.topic());
+        vertx.eventBus().publish(PREFIX_EVENT_BUS + topic, consumerRecord.value());
     }
 
     @Override
     public <T extends AbstractNotice> SubscriptionMsg subscribe(String topic, Class<T> type,
             Handler<PackageMsgNotice<T>> receiveHandler) {
-        return subscribe(topic, type, receiveHandler, nothing -> {});
+        return subscribe(topic, type, receiveHandler, subscribeResult -> {
+            if (subscribeResult.failed()) {
+                LOGGER.error("Error when subscribing", subscribeResult.cause());
+            }
+        });
     }
-    
+
     @Override
     public <T extends AbstractNotice> SubscriptionMsg subscribe(String topic, Class<T> type,
             Handler<PackageMsgNotice<T>> receiveHandler, Handler<AsyncResult<Void>> completionHandler) {
-        this.initGlobalConsumer();
-        globalConsumer.subscribe(topic, completionHandler);
+        KafkaConsumer<String, JsonObject> consumerForTopic = this.getConsumer(topic);
+        consumerForTopic.subscribe(Pattern.compile(topic), completionHandler);
 
-        MessageConsumer<JsonObject> subscribeConsumer = vertx.eventBus().consumer(getBaseTopicEventBus(topic));
+        MessageConsumer<JsonObject> subscribeConsumer = vertx.eventBus().consumer(PREFIX_EVENT_BUS + topic);
         subscribeConsumer.handler(message -> {
             PackageMsgNotice<T> packageMsg = new PackageMsgNotice<>(message.body().mapTo(type), subscribeConsumer);
             receiveHandler.handle(packageMsg);
@@ -78,17 +84,20 @@ public class ConsumerDelegateImpl implements ConsumerDelegate {
         return new SubscriptionMsg(subscribeConsumer);
     }
 
-    private String getBaseTopicEventBus(String topic) {
-        // Get the name of the address in eventBus for the topic
-        String[] topicSplit = topic.split("/");
-        String topicPrefix = topicSplit.length == 0 ? "" : topicSplit[0];
-        return PREFIX_EVENT_BUS + topicPrefix;
+    @Override
+    public void refreshSubscribe(String topic) {
+        KafkaConsumer<String, JsonObject> consumerForTopic = this.getConsumer(topic);
+        consumerForTopic.subscribe(Pattern.compile(topic), subscribeResult -> {
+            if (subscribeResult.failed()) {
+                LOGGER.error("Error when refresh subscribing", subscribeResult.cause());
+            }
+        });
     }
 
     @Override
     public <T extends AbstractNotice> Promise<T> poll(String topic, Class<T> type, long timeout) {
         Promise<T> promise = Promise.promise();
-        globalConsumer.poll(timeout, pollResult -> {
+        getConsumer(topic).poll(timeout, pollResult -> {
             if (pollResult.failed()) {
                 promise.fail(pollResult.cause());
                 return;
@@ -113,9 +122,9 @@ public class ConsumerDelegateImpl implements ConsumerDelegate {
     @Override
     public Promise<Void> resendLastMessages(String topic, int messageToResend) {
         Promise<Void> promise = Promise.promise();
-        this.initGlobalConsumer();
+        KafkaConsumer<String, JsonObject> consumerForTopic = this.getConsumer(topic);
 
-        changePosition(globalConsumer, topic, messageToResend).future()
+        changePosition(consumerForTopic, topic, messageToResend).future()
             .<Void>mapEmpty().setHandler(result -> {
                 if (result.failed()) {
                     LOGGER.error("Resend Last Message Failed", result.cause());

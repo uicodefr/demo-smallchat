@@ -1,29 +1,24 @@
 package com.uicode.smallchat.smallchatserver.websocket;
 
 public class WebSocketMsg<T> {
-    
-    public static class WebSocketMsgString extends WebSocketMsg<String> {
-    }
 
-    public static final String CHANNEL_PREFIX = "#";
-    public static final String USER_PREFIX = "@";
-    public static final String CHAT_STATE_CHANNEL = "state";
-    public static final String PING_CHANNEL = "ping";
+    public static final String CHANNEL_MESSAGE_SUBJECT = "channel-message";
+    public static final String CHAT_STATE_SUBJECT = "state";
+    public static final String PING_SUBJECT = "ping";
 
-
-    private String channel;
+    private String subject;
 
     private T data;
 
     private WebSocketMsg() {
     }
 
-    public String getChannel() {
-        return channel;
+    public String getSubject() {
+        return subject;
     }
 
-    public void setChannel(String channel) {
-        this.channel = channel;
+    public void setSubject(String subject) {
+        this.subject = subject;
     }
 
     public T getData() {
@@ -34,9 +29,9 @@ public class WebSocketMsg<T> {
         this.data = data;
     }
 
-    public static <T> WebSocketMsg<T> of(String channel, T data) {
+    public static <T> WebSocketMsg<T> of(String subject, T data) {
         WebSocketMsg<T> webSocketMsg = new WebSocketMsg<>();
-        webSocketMsg.setChannel(channel);
+        webSocketMsg.setSubject(subject);
         webSocketMsg.setData(data);
         return webSocketMsg;
     }

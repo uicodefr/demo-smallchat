@@ -10,6 +10,8 @@ public class ChannelMessage {
 
     private String id;
 
+    private String channelId;
+
     private Type type;
 
     private String message;
@@ -24,6 +26,14 @@ public class ChannelMessage {
 
     public void setId(String id) {
         this.id = id;
+    }
+
+    public String getChannelId() {
+        return channelId;
+    }
+
+    public void setChannelId(String channelId) {
+        this.channelId = channelId;
     }
 
     public Type getType() {

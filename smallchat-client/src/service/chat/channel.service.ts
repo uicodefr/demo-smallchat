@@ -15,6 +15,10 @@ export class ChannelService {
   }
 
   public getChannel(channelId: string): Promise<ChannelFullModel> {
-    return this.restClientService.get(UrlConstant.Channel.GET + '/' + channelId);
+    return this.restClientService.get(UrlConstant.Channel.CHANNEL + channelId);
+  }
+
+  public connect(channelId: string): Promise<ChannelFullModel> {
+    return this.restClientService.post(UrlConstant.Channel.CHANNEL + channelId + UrlConstant.Channel.CONNECT, null);
   }
 }

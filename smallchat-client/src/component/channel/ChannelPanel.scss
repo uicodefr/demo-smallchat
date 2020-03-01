@@ -21,27 +21,42 @@
   }
 
   .channelHeader {
-    height: 80px;
+    height: 50px;
     .channelId {
       float: right;
       margin-top: -1rem;
       color: rgba(0, 0, 0, 0.7);
       font-size: 0.9rem;
     }
+    .channelName {
+      display: inline-block;
+    }
     .channelDescription {
+      display: inline-block;
+      margin-left: $margin-large;
       font-size: 1rem;
       font-style: italic;
     }
   }
 
   .channelShow {
-    height: calc(100% - 140px);
+    height: calc(100% - 90px);
     overflow-y: auto;
-    background-color: lightyellow;
+    overflow: auto;
   }
 
   .channelSend {
-    height: 60px;
-    background-color: lightcyan;
+    height: 40px;
+    margin-top: 10px;
+    .formMessage {
+      display: flex;
+      .textZone {
+        width: calc(100% - 100px);
+      }
+      .buttonZone {
+        width: 100px;
+        text-align: center;
+      }
+    }
   }
 }

@@ -1,2 +1,2 @@
-# Post-It
-Demo App With Spring Boot and Angular
+# SmallChat
+Demo App With React, Vertx and Kafka

@@ -4,7 +4,7 @@ import com.uicode.smallchat.smallchatserver.model.chat.internal.ChatStateInterna
 
 public class ChatStateNotice extends AbstractNotice {
 
-    public static final String TOPIC = "chat-state";
+    public static final String TOPIC = "state";
 
     private ChatStateInternal chatState;
 

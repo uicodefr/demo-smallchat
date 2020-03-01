@@ -37,8 +37,8 @@ public class WebSocketMediatorImpl implements WebSocketMediator {
     }
 
     @Override
-    public void connectUserForSubscription(String userId, String channelId, boolean connection) {
-        webSocketServer.connectUserForSubscription(userId, channelId, connection);
+    public void connectUserForSubscription(String userId, String subscriptionId, boolean connection) {
+        webSocketServer.connectUserForSubscription(userId, subscriptionId, connection);
     }
 
     @Override
@@ -47,8 +47,8 @@ public class WebSocketMediatorImpl implements WebSocketMediator {
     }
 
     @Override
-    public <T> void send(String channelId, T message) {
-        webSocketServer.send(channelId, message);
+    public <T> void send(String subscriptionId, T message) {
+        webSocketServer.send(subscriptionId, message);
     }
 
     @Override

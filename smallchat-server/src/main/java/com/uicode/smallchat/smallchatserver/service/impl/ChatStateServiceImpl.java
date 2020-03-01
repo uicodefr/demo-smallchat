@@ -69,8 +69,10 @@ public class ChatStateServiceImpl implements ChatStateService {
 
         initSubscribe().future().setHandler(initResult -> {
             if (initResult.failed()) {
+                LOGGER.error("Init subscribe for ChatState failed", initResult.cause());
                 promise.fail(initResult.cause());
             }
+            LOGGER.info("Init subscribe for ChatState succeeded");
             promise.complete(mergeChatState(chatStateInt));
         });
         return promise;
@@ -84,10 +86,10 @@ public class ChatStateServiceImpl implements ChatStateService {
         }
 
         subscription = consumerDelegate.subscribe(ChatStateNotice.TOPIC, ChatStateNotice.class, packageMsg -> {
-            LOGGER.trace("Receive new ChatState from Kafka");
+            LOGGER.trace("Receive new ChatState");
             mergeChatState(packageMsg.getNotice().getChatState());
-            // Publish the new ChatState to the Websocket
-            webSocketMediator.send(WebSocketMsg.CHAT_STATE_CHANNEL, chatStateInt.toChatState());
+            // Publish the new ChatState to the WebSocket
+            webSocketMediator.send(WebSocketMsg.CHAT_STATE_SUBJECT, chatStateInt.toChatState());
 
         }, subscribeCompletion -> 
             // Resend Last Message after subscription

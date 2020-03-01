@@ -4,9 +4,9 @@
 	 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
-	<groupId>com.uicode.smallchat</groupId>
+	<groupId>com.uicode.demo.smallchat</groupId>
 	<artifactId>smallchat-server</artifactId>
-	<version>0.1.0</version>
+	<version>0.1.1</version>
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -19,12 +19,25 @@
 		<maven-surefire-plugin.version>2.22.1</maven-surefire-plugin.version>
 		<exec-maven-plugin.version>1.5.0</exec-maven-plugin.version>
 
-		<vertx.version>3.8.4</vertx.version>
+		<vertx.version>3.8.5</vertx.version>
 		<junit-jupiter.version>5.5.2</junit-jupiter.version>
 		<kafka.version>2.3.0</kafka.version>
 
-		<main.verticle>com.uicode.smallchat.smallchatserver.verticle.MainVerticle</main.verticle>
+		<main.verticle>com.uicode.smallchat.smallchatserver.MainVerticle</main.verticle>
 	</properties>
+	
+	<distributionManagement>
+		<repository>
+			<id>mynexus</id>
+			<name>My Nexus</name>
+			<url>https://nexus.uicode.dev/repository/maven-releases/</url>
+		</repository>
+		<snapshotRepository>
+			<id>mynexus-snapshots</id>
+			<name>My Nexus Snapshots</name>
+			<url>https://nexus.uicode.dev/repository/maven-snapshots/</url>
+		</snapshotRepository>
+	</distributionManagement>
 
 	<dependencyManagement>
 		<dependencies>
@@ -92,7 +105,7 @@
 		<dependency>
 			<groupId>org.apache.logging.log4j</groupId>
 			<artifactId>log4j-core</artifactId>
-			<version>2.11.2</version>
+			<version>2.12.1</version>
 		</dependency>
 		<dependency>
 			<groupId>commons-io</groupId>
@@ -128,60 +141,64 @@
 			<version>${junit-jupiter.version}</version>
 			<scope>test</scope>
 		</dependency>
+		<dependency>
+			<groupId>org.assertj</groupId>
+			<artifactId>assertj-core</artifactId>
+			<version>3.15.0</version>
+			<scope>test</scope>
+		</dependency>
 	</dependencies>
 
 	<build>
 		<plugins>
 			<plugin>
-			<artifactId>maven-compiler-plugin</artifactId>
-			<version>${maven-compiler-plugin.version}</version>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<version>${maven-compiler-plugin.version}</version>
 			</plugin>
 			<plugin>
-			<artifactId>maven-shade-plugin</artifactId>
-			<version>${maven-shade-plugin.version}</version>
-			<executions>
-				<execution>
-				<phase>package</phase>
-				<goals>
-					<goal>shade</goal>
-				</goals>
+				<artifactId>maven-shade-plugin</artifactId>
+				<version>${maven-shade-plugin.version}</version>
+				<executions>
+					<execution>
+						<phase>package</phase>
+						<goals>
+							<goal>shade</goal>
+						</goals>
+						<configuration>
+							<transformers>
+							<transformer
+								implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+								<manifestEntries>
+								<Main-Class>io.vertx.core.Launcher</Main-Class>
+								<Main-Verticle>${main.verticle}</Main-Verticle>
+								</manifestEntries>
+							</transformer>
+							<transformer
+								implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
+								<resource>META-INF/services/io.vertx.core.spi.VerticleFactory</resource>
+							</transformer>
+							</transformers>
+							<artifactSet>
+							</artifactSet>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<version>${maven-surefire-plugin.version}</version>
+			</plugin>
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>exec-maven-plugin</artifactId>
+				<version>${exec-maven-plugin.version}</version>
 				<configuration>
-					<transformers>
-					<transformer
-						implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-						<manifestEntries>
-						<Main-Class>io.vertx.core.Launcher</Main-Class>
-						<Main-Verticle>${main.verticle}</Main-Verticle>
-						</manifestEntries>
-					</transformer>
-					<transformer
-						implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
-						<resource>META-INF/services/io.vertx.core.spi.VerticleFactory</resource>
-					</transformer>
-					</transformers>
-					<artifactSet>
-					</artifactSet>
-					<outputFile>${project.build.directory}/${project.artifactId}-${project.version}-fat.jar
-					</outputFile>
+					<mainClass>io.vertx.core.Launcher</mainClass>
+					<arguments>
+						<argument>run</argument>
+						<argument>${main.verticle}</argument>
+					</arguments>
 				</configuration>
-				</execution>
-			</executions>
-			</plugin>
-			<plugin>
-			<artifactId>maven-surefire-plugin</artifactId>
-			<version>${maven-surefire-plugin.version}</version>
-			</plugin>
-			<plugin>
-			<groupId>org.codehaus.mojo</groupId>
-			<artifactId>exec-maven-plugin</artifactId>
-			<version>${exec-maven-plugin.version}</version>
-			<configuration>
-				<mainClass>io.vertx.core.Launcher</mainClass>
-				<arguments>
-					<argument>run</argument>
-					<argument>${main.verticle}</argument>
-				</arguments>
-			</configuration>
 			</plugin>
 		</plugins>
 	</build>

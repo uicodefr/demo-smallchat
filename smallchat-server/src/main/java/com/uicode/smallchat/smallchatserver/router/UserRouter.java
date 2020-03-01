@@ -81,7 +81,6 @@ public class UserRouter {
 
     private void expireCookie(Cookie jwtCookie) {
         jwtCookie.setHttpOnly(true);
-        jwtCookie.setPath("/");
         jwtCookie.setMaxAge(0);
     }
 

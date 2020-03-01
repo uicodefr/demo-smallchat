@@ -48,7 +48,7 @@ public class MainVerticle extends AbstractVerticle {
             // Http Server
             mainRouter.mountRouter();
             HttpServer httpServer = vertx.createHttpServer().requestHandler(mainRouter.getRouter());
-            httpServer.websocketHandler(webSocketHandler::handleWebSocket);
+            httpServer.webSocketHandler(webSocketHandler::handleWebSocket);
             httpServer.listen(httpPort, http -> {
                 if (http.succeeded()) {
                     startPromise.complete();

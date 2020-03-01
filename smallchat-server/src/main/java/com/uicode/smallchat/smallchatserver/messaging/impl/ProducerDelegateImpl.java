@@ -5,6 +5,8 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.apache.kafka.common.errors.TopicExistsException;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import com.google.inject.Inject;
 import com.uicode.smallchat.smallchatserver.messaging.ProducerDelegate;
@@ -22,7 +24,9 @@ import io.vertx.kafka.client.producer.RecordMetadata;
 
 public class ProducerDelegateImpl implements ProducerDelegate {
 
-    private static final int TOPIC_NUM_PARTITION = 1;
+    private static final Logger LOGGER = LogManager.getLogger(ProducerDelegateImpl.class);
+
+    private static final int TOPIC_NUM_PARTITION = 4;
     private static final short TOPIC_REPLICATION_FACTOR = 1;
 
     private final Vertx vertx;
@@ -83,6 +87,13 @@ public class ProducerDelegateImpl implements ProducerDelegate {
                     messageJson);
             globalProducer.send(record, promise::handle);
         });
+        
+        promise.future().setHandler(publishResult -> {
+            if (publishResult.failed()) {
+                LOGGER.error("Error when publishing", publishResult.cause());
+            }
+        });
+        
         return promise;
     }
 

@@ -2,6 +2,8 @@ import { UrlConstant } from '../../const/url-constant';
 import { UserModel } from '../../model/global/user.model';
 import { Observable, BehaviorSubject } from 'rxjs';
 import { RestClientService } from '../util/rest-client.service';
+import axios from 'axios';
+import { WebSocketService } from '../chat/websocket.service';
 
 export class AuthenticationService {
   private static readonly INSTANCE = new AuthenticationService();
@@ -21,19 +23,16 @@ export class AuthenticationService {
     formData.append('username', username);
     formData.append('password', password);
 
-    const requestInit = { method: 'POST', body: formData } as RequestInit;
-    return window
-      .fetch(UrlConstant.LOGIN, requestInit)
+    return axios
+      .post(UrlConstant.LOGIN, formData)
       .then(response => {
-        if (response.status !== 200) {
-          this.userSubject.next(null);
-          return null;
-        } else {
-          return response.json().then(object => {
-            this.userSubject.next(object);
-            return object;
-          });
+        let user = null as UserModel;
+        if (response.status === 200) {
+          user = response.data;
+          WebSocketService.get().connectWebSocket();
         }
+        this.userSubject.next(user);
+        return user;
       })
       .catch(error => {
         this.userSubject.next(null);
@@ -43,8 +42,7 @@ export class AuthenticationService {
 
   public logout(): Promise<void> {
     return new Promise((resolve, reject) => {
-      const requestInit = { method: 'POST' } as RequestInit;
-      window.fetch(UrlConstant.LOGOUT, requestInit).finally(() => {
+      axios.post(UrlConstant.LOGOUT, null).finally(() => {
         this.userSubject.next(null);
         resolve();
       });

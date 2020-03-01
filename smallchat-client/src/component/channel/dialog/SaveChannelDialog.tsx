@@ -53,7 +53,9 @@ export class SaveChannelDialog extends React.Component<Props, State> {
     const inCreationMode = !this.props.channel.id;
     const title = inCreationMode ? 'Create Channel' : 'Edit Channel';
     const saveLabel = inCreationMode ? 'Create' : 'Update';
-    const valueChannel = { id: '', name: '', description: '', ...this.props.channel };
+    const valueChannel = { ...this.props.channel };
+    valueChannel.id = valueChannel.id || '';
+    valueChannel.name = valueChannel.name || '';
     valueChannel.description = valueChannel.description || '';
 
     const schema = yup.object({

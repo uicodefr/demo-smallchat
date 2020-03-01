@@ -4,7 +4,7 @@ import com.uicode.smallchat.smallchatserver.model.channel.ChannelMessage;
 
 public class ChannelNotice extends AbstractNotice {
 
-    public static final String TOPIC= "channel.";
+    public static final String TOPIC= "channel-";
 
     private String channelId;
 

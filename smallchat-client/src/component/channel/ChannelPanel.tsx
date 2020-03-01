@@ -2,13 +2,13 @@ import React from 'react';
 import Jumbotron from 'react-bootstrap/Jumbotron';
 import './ChannelPanel.scss';
 import Spinner from 'react-bootstrap/Spinner';
-import { ChannelService } from '../../service/chat/channel.service';
 import { WebSocketService } from '../../service/chat/websocket.service';
 import { ChannelFullModel } from '../../model/channel/channel-full.model';
 import Button from 'react-bootstrap/Button';
 import { Formik, FormikValues } from 'formik';
 import Form from 'react-bootstrap/Form';
-import { WebsocketMsgModel } from '../../model/chat/websocket-msg.model';
+import { Subscription } from 'rxjs';
+import { ChatMessage } from './message/ChatMessage';
 
 interface Props {
   channelId: string;
@@ -19,13 +19,14 @@ interface State {
 }
 
 export class ChannelPanel extends React.Component<Props, State> {
-  private channelService: ChannelService;
   private webSocketService: WebSocketService;
+  private channelSubscription: Subscription;
+
+  private channelShowBottomRef = React.createRef<HTMLDivElement>();
 
   constructor(props: Props) {
     super(props);
 
-    this.channelService = ChannelService.get();
     this.webSocketService = WebSocketService.get();
 
     this.state = {
@@ -33,52 +34,76 @@ export class ChannelPanel extends React.Component<Props, State> {
       channel: null
     };
 
-    this.handleSubmitSend = this.handleSubmitSend.bind(this);
+    this.handleSendSubmit = this.handleSendSubmit.bind(this);
   }
 
   componentDidMount() {
     this.loadChannel();
+    this.scrollChannelShowToBottom();
+  }
+
+  componentWillUnmount() {
+    if (this.channelSubscription) {
+      this.channelSubscription.unsubscribe();
+    }
   }
 
   componentDidUpdate(prevProps) {
     if (this.props.channelId !== prevProps.channelId) {
       this.loadChannel();
     }
+    this.scrollChannelShowToBottom();
   }
 
   private loadChannel() {
+    if (!this.props.channelId) {
+      return;
+    }
+
     const channelId = this.props.channelId;
     this.setState({
       loading: true
     });
 
-    this.channelService
-      .getChannel(channelId)
-      .then(channel => {
+    if (this.channelSubscription) {
+      this.channelSubscription.unsubscribe();
+    }
+
+    this.channelSubscription = this.webSocketService.getChannelObservable(channelId).subscribe(
+      channel => {
         this.setState({
           loading: false,
           channel: channel
         });
-      })
-      .catch(error => {
+      },
+      error => {
         this.setState({
           loading: false,
           channel: null
         });
-      });
+      }
+    );
+    this.webSocketService.connectToChannel(channelId);
   }
 
-  handleSubmitSend(formSendValues: FormikValues) {
-    if (!this.state.channel) {
+  handleSendSubmit(formSendValues: FormikValues, { setFieldValue }) {
+    const message = formSendValues['messageTxt'].trim();
+    if (!this.state.channel || !message) {
       return;
     }
 
-    const channel = WebsocketMsgModel.CHANNEL_PREFIX + this.state.channel.id;
-    this.webSocketService.sendMessage(channel, formSendValues['messageTxt']);
+    this.webSocketService.sendMessage(this.state.channel.id, message);
+    setFieldValue('messageTxt', '');
+  }
+
+  scrollChannelShowToBottom() {
+    if (this.channelShowBottomRef.current) {
+      this.channelShowBottomRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
   }
 
   render() {
-    const initValues = {};
+    const initValues = { messageTxt: '' };
     return (
       <Jumbotron className="ChannelPanel">
         {this.state.loading ? (
@@ -91,28 +116,40 @@ export class ChannelPanel extends React.Component<Props, State> {
           <>
             <div className="channelHeader">
               <span className="channelId"> {this.state.channel.id} </span>
-              <h1> {this.state.channel.name} </h1>
+              <h1 className="channelName"> {this.state.channel.name} </h1>
               <span className="channelDescription"> {this.state.channel.description} </span>
             </div>
-            <div className="channelShow">Messages Length : {this.state.channel.messages.length}</div>
-            <div className="channelSend">
-              <Formik onSubmit={this.handleSubmitSend} initialValues={initValues}>
-                {({ values, errors, handleChange, handleBlur, handleSubmit }) => (
-                  <Form onSubmit={handleSubmit}>
-                    <Form.Group controlId="formMessageTxt">
-                      <Form.Control
-                        type="text"
-                        name="messageTxt"
-                        value={values.id}
-                        onChange={handleChange}
-                        onBlur={handleBlur}
-                        isInvalid={!!errors.id}
-                      />
-                    </Form.Group>
 
-                    <Button variant="primary" type="submit">
-                      SEND
-                    </Button>
+            <div className="channelShow">
+              {this.state.channel.messages.map(message => (
+                <ChatMessage key={message.id} message={message} />
+              ))}
+              <div ref={this.channelShowBottomRef}></div>
+            </div>
+
+            <div className="channelSend">
+              <Formik enableReinitialize onSubmit={this.handleSendSubmit} initialValues={initValues}>
+                {({ values, errors, handleChange, handleBlur, handleSubmit }) => (
+                  <Form className="formMessage" onSubmit={handleSubmit}>
+                    <div className="textZone">
+                      <Form.Group controlId="formMessageTxt">
+                        <Form.Control
+                          type="text"
+                          autoComplete="off"
+                          name="messageTxt"
+                          value={values.messageTxt}
+                          onChange={handleChange}
+                          onBlur={handleBlur}
+                          isInvalid={!!errors.id}
+                        />
+                      </Form.Group>
+                    </div>
+
+                    <div className="buttonZone">
+                      <Button variant="primary" type="submit">
+                        Send
+                      </Button>
+                    </div>
                   </Form>
                 )}
               </Formik>

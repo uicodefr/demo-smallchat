@@ -17,7 +17,6 @@ import com.uicode.smallchat.smallchatserver.util.GeneralConst;
 import com.uicode.smallchat.smallchatserver.util.HttpStatus;
 import com.uicode.smallchat.smallchatserver.websocket.WebSocketMediator;
 import com.uicode.smallchat.smallchatserver.websocket.WebSocketMsg;
-import com.uicode.smallchat.smallchatserver.websocket.WebSocketMsg.WebSocketMsgString;
 import com.uicode.smallchat.smallchatserver.websocket.WebSocketServer;
 
 import io.netty.handler.codec.http.cookie.Cookie;
@@ -27,6 +26,7 @@ import io.vertx.core.Promise;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.ServerWebSocket;
 import io.vertx.core.json.Json;
+import io.vertx.core.json.JsonObject;
 import io.vertx.ext.auth.User;
 
 public class WebSocketServerImpl implements WebSocketServer {
@@ -70,27 +70,36 @@ public class WebSocketServerImpl implements WebSocketServer {
 
             connections.put(userId, currentConnection);
             webSocketMediator.receiveUserConnection(userId, true);
-            getSubscriptionList(WebSocketMsg.CHAT_STATE_CHANNEL).add(currentConnection);
+            getSubscriptionList(WebSocketMsg.CHAT_STATE_SUBJECT).add(currentConnection);
 
             serverWebSocket.endHandler(endHandler -> {
                 connections.remove(userId);
                 webSocketMediator.receiveUserConnection(userId, false);
-                getSubscriptionList(WebSocketMsg.CHAT_STATE_CHANNEL).remove(currentConnection);
+                for (String subscriptionId : subscriptions.keySet()) {
+                    getSubscriptionList(subscriptionId).remove(currentConnection);
+                }
             });
 
             serverWebSocket.textMessageHandler(textHandler -> {
                 try {
-                    WebSocketMsg<String> receiveWebSocketMsg = Json.decodeValue(textHandler,
-                            WebSocketMsgString.class);
+                    JsonObject receiveWebSocketMsg = new JsonObject(textHandler);
+                    String subject = receiveWebSocketMsg.getString("subject");
 
-                    if (receiveWebSocketMsg.getChannel().startsWith(WebSocketMsg.CHANNEL_PREFIX)) {
-                        webSocketMediator.receiveSendMessage(userId, receiveWebSocketMsg.getChannel(),
-                                receiveWebSocketMsg.getData());
+                    switch (subject) {
 
-                    } else if (receiveWebSocketMsg.getChannel().equals(WebSocketMsg.PING_CHANNEL)) {
+                    case WebSocketMsg.CHANNEL_MESSAGE_SUBJECT:
+                        JsonObject data = receiveWebSocketMsg.getJsonObject("data");
+                        SendChannelMessageMsg sendChannelMessage = data.mapTo(SendChannelMessageMsg.class);
+                        webSocketMediator.receiveSendMessage(userId, sendChannelMessage.getChannelId(), sendChannelMessage.getMessage());
+                        break;
+
+                    case WebSocketMsg.PING_SUBJECT:
                         // Do nothing on ping
-                    } else {
+                        break;
+
+                    default:
                         LOGGER.error("Message unknown : {}", textHandler.trim());
+                        break;
                     }
 
                 } catch (Exception exception) {
@@ -131,12 +140,12 @@ public class WebSocketServerImpl implements WebSocketServer {
         return result;
     }
 
-    private List<Pair<ServerWebSocket, String>> getSubscriptionList(String channelId) {
-        return this.subscriptions.computeIfAbsent(channelId, key -> new ArrayList<>());
+    private List<Pair<ServerWebSocket, String>> getSubscriptionList(String subscriptionId) {
+        return this.subscriptions.computeIfAbsent(subscriptionId, key -> new ArrayList<>());
     }
 
     @Override
-    public void connectUserForSubscription(String userId, String channelId, boolean connection) {
+    public void connectUserForSubscription(String userId, String subscriptionId, boolean connection) {
         Pair<ServerWebSocket, String> userConnection = connections.get(userId);
         if (userConnection == null) {
             LOGGER.error("No userConnection for userId : {}", userId);
@@ -145,19 +154,25 @@ public class WebSocketServerImpl implements WebSocketServer {
 
         if (connection) {
             // Connect
-            getSubscriptionList(channelId).add(userConnection);
+            getSubscriptionList(subscriptionId).add(userConnection);
         } else {
             // Disconnect
-            getSubscriptionList(channelId).remove(userConnection);
+            getSubscriptionList(subscriptionId).remove(userConnection);
         }
     }
 
     @Override
-    public <T> void send(String channelId, T message) {
-        getSubscriptionList(channelId).forEach(connection -> {
+    public <T> void send(String subscriptionId, T message) {
+        String subject = subscriptionId;
+        if (subscriptionId.startsWith(GeneralConst.SUBSCRIPTION_CHANNEL_PREFIX)) {
+            subject = WebSocketMsg.CHANNEL_MESSAGE_SUBJECT;
+        }
+        String finalSubject = subject;
+
+        getSubscriptionList(subscriptionId).forEach(connection -> {
             ServerWebSocket serverWebSocket = connection.getLeft();
             if (!serverWebSocket.isClosed()) {
-                serverWebSocket.writeTextMessage(Json.encode(WebSocketMsg.of(channelId, message)));
+                serverWebSocket.writeTextMessage(Json.encode(WebSocketMsg.of(finalSubject, message)));
             }
         });
     }

@@ -3,6 +3,7 @@ export class UrlConstant {
 
   public static readonly LOGIN = UrlConstant.BASE + '/login';
   public static readonly LOGOUT = UrlConstant.BASE + '/logout';
+  public static readonly WEBSOCKET = UrlConstant.BASE + '/websocket';
 
   private static readonly GLOBAL_PREFIX = UrlConstant.BASE + '/global';
   public static readonly Global = {
@@ -26,7 +27,8 @@ export class UrlConstant {
 
   private static readonly CHANNEL_PREFIX = UrlConstant.BASE + '/channels';
   public static readonly Channel = {
-    GET: UrlConstant.CHANNEL_PREFIX
+    CHANNEL: UrlConstant.CHANNEL_PREFIX + '/',
+    CONNECT: '/connect'
   };
 
   public static readonly WebSocket = {

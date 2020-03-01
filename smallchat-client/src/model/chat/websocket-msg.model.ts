@@ -1,8 +1,8 @@
 export class WebsocketMsgModel {
-  public static readonly CHANNEL_PREFIX = '#';
-  public static readonly USER_PREFIX = '@';
-  public static readonly CHAT_STATE_CHANNEL = 'state';
+  public static readonly CHANNEL_MESSAGE_SUBJECT = 'channel-message';
+  public static readonly PING_SUBJECT = 'ping';
+  public static readonly CHAT_STATE_SUBJECT = 'state';
 
-  channel: string;
+  subject: string;
   data: any;
 }

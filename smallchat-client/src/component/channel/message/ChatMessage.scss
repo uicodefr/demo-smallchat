@@ -1,0 +1,21 @@
+@import '../../../global.scss';
+
+.ChatMessage {
+  margin-top: $margin-base;
+  &.sentMessage .user {
+    font-style: italic;
+  }
+  .user {
+    display: inline-block;
+    font-weight: bold;
+  }
+  .date {
+    display: inline-block;
+    margin-left: $margin-large;
+    font-size: 0.8rem;
+    color: $color-light-grey;
+  }
+  .message {
+    font-weight: normal;
+  }
+}
