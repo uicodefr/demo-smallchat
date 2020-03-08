@@ -57,7 +57,7 @@ export class App extends React.Component<Props, State> {
           <Route path="/signin" component={Login} />
           <Route component={NotFound} />
         </Switch>
-        <div style={{ display: 'none' }}>version: '0.1.2-SNAPSHOT'</div>
+        <div style={{ display: 'none' }}>version: '0.1.3-SNAPSHOT'</div>
       </div>
     );
   }

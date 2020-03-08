@@ -48,11 +48,13 @@ public class ConsumerDelegateImpl implements ConsumerDelegate {
     }
 
     private KafkaConsumer<String, JsonObject> getConsumer(String topic) {
-        KafkaConsumer<String, JsonObject> consumerForTopic = globalConsumerMap.computeIfAbsent(topic, key ->
-            KafkaConsumer.<String, JsonObject>create(vertx, ConfigUtil.getConfig().getKafkaConsumer())
-                .handler(consumerRecord -> this.handleConsumer(topic, consumerRecord))
-        );
-        return consumerForTopic;
+        return globalConsumerMap.computeIfAbsent(topic, key -> {
+            KafkaConsumer<String, JsonObject> newConsumer = KafkaConsumer.create(vertx,
+                    ConfigUtil.getConfig().getKafkaConsumer());
+            newConsumer.exceptionHandler(error -> LOGGER.error("Error with consumer", error));
+            newConsumer.handler(consumerRecord -> this.handleConsumer(topic, consumerRecord));
+            return newConsumer;
+        });
     }
 
     private void handleConsumer(String topic, KafkaConsumerRecord<String, JsonObject> consumerRecord) {
@@ -146,6 +148,9 @@ public class ConsumerDelegateImpl implements ConsumerDelegate {
         Map<String, String> kafkaConfig = new HashMap<>(ConfigUtil.getConfig().getKafkaConsumer());
         kafkaConfig.put("group.id", anonymousGroupId);
         KafkaConsumer<String, JsonObject> anonymousConsumer = KafkaConsumer.create(vertx, kafkaConfig);
+        anonymousConsumer.exceptionHandler(error ->
+            LOGGER.error("Error with anonymousConsumer on getLastMessages", error)
+        );
         
         List<T> resultList = new ArrayList<>();
         
@@ -197,8 +202,8 @@ public class ConsumerDelegateImpl implements ConsumerDelegate {
         });
 
         resultPromise.future().setHandler(result ->
-            // Unsubscribe Consumer finally (on complete or on error)
-            anonymousConsumer.unsubscribe()
+            // Close Consumer finally (on complete or on error)
+            anonymousConsumer.close()
         );
 
         return resultPromise;
