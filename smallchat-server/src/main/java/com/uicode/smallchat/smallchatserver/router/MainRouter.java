@@ -1,5 +1,7 @@
 package com.uicode.smallchat.smallchatserver.router;
 
+import java.util.Optional;
+
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -127,8 +129,13 @@ public class MainRouter {
         });
     }
 
-    public static String getUserId(RoutingContext requestHandler) {
-        return requestHandler.user().principal().getString(UserPayload.USERNAME_FIELD);
+    public static Optional<String> getUserId(RoutingContext requestHandler) {
+        if (requestHandler.user() == null || requestHandler.user().principal() == null) {
+            return Optional.empty();
+        } else {
+            String userId = requestHandler.user().principal().getString(UserPayload.USERNAME_FIELD);
+            return Optional.of(userId);
+        }
     }
 
 }

@@ -4,6 +4,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import com.google.inject.Inject;
 import com.uicode.smallchat.smallchatserver.exception.InvalidDataException;
+import com.uicode.smallchat.smallchatserver.exception.UnauthorizedException;
 import com.uicode.smallchat.smallchatserver.service.ChannelService;
 
 import io.vertx.core.Vertx;
@@ -46,8 +47,13 @@ public class ChannelRouter {
             requestHandler.fail(new InvalidDataException(INVALID_CHANNEL_ID_ERROR));
             return;
         }
-        String userId = MainRouter.getUserId(requestHandler);
-        MainRouter.mapResponse(channelService.connect(userId, channelId), requestHandler);
+        try {
+            String userId = MainRouter.getUserId(requestHandler)
+                    .orElseThrow(() -> new UnauthorizedException("User need to sign in"));
+            MainRouter.mapResponse(channelService.connect(userId, channelId), requestHandler);
+        } catch (UnauthorizedException exception) {
+            requestHandler.fail(exception);
+        }
     }
 
     private void disconnectToChannel(RoutingContext requestHandler) {
@@ -56,8 +62,13 @@ public class ChannelRouter {
             requestHandler.fail(new InvalidDataException(INVALID_CHANNEL_ID_ERROR));
             return;
         }
-        String userId = MainRouter.getUserId(requestHandler);
-        MainRouter.mapResponse(channelService.disconnect(userId, channelId), requestHandler);
+        try {
+            String userId = MainRouter.getUserId(requestHandler)
+                    .orElseThrow(() -> new UnauthorizedException("User need to sign in"));
+            MainRouter.mapResponse(channelService.disconnect(userId, channelId), requestHandler);
+        } catch (UnauthorizedException exception) {
+            requestHandler.fail(exception);
+        }
     }
 
 }

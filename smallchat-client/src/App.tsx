@@ -8,6 +8,7 @@ import { Menu } from './component/Menu';
 import { AuthenticationService } from './service/auth/authentication.service';
 import Spinner from 'react-bootstrap/Spinner';
 import { WebSocketService } from './service/chat/websocket.service';
+import PrivateRoute from './component/shared/security/PrivateRoute';
 
 interface Props {}
 interface State {
@@ -52,11 +53,11 @@ export class App extends React.Component<Props, State> {
         <Menu></Menu>
         <Switch>
           <Route exact path="/" component={Channel} />
-          <Route path="/c/:channelId" component={Channel} />
-          <Route path="/login" component={Login} />
+          <PrivateRoute path="/c/:channelId" component={Channel} />
+          <Route path="/signin" component={Login} />
           <Route component={NotFound} />
         </Switch>
-        <div style={{ display: 'none' }}>version: '0.1.1'</div>
+        <div style={{ display: 'none' }}>version: '0.1.2-SNAPSHOT'</div>
       </div>
     );
   }

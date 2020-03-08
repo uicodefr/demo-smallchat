@@ -5,6 +5,7 @@ public class WebSocketMsg<T> {
     public static final String CHANNEL_MESSAGE_SUBJECT = "channel-message";
     public static final String CHAT_STATE_SUBJECT = "state";
     public static final String PING_SUBJECT = "ping";
+    public static final String PONG_SUBJECT = "pong";
 
     private String subject;
 

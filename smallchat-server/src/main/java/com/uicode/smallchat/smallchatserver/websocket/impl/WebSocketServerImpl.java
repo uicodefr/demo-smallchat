@@ -94,7 +94,7 @@ public class WebSocketServerImpl implements WebSocketServer {
                         break;
 
                     case WebSocketMsg.PING_SUBJECT:
-                        // Do nothing on ping
+                        serverWebSocket.writeTextMessage(Json.encode(WebSocketMsg.of(WebSocketMsg.PONG_SUBJECT, "pong")));
                         break;
 
                     default:

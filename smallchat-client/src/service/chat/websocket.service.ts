@@ -17,6 +17,7 @@ export class WebSocketService {
   private authenticationService: AuthenticationService;
 
   private webSocket: WebSocket;
+  private connectedSubject = new BehaviorSubject<boolean>(false);
 
   private currentUser: string;
   private chatStateSubject = new BehaviorSubject<ChatStateModel>(null);
@@ -82,6 +83,7 @@ export class WebSocketService {
   }
 
   private connect() {
+    this.connectedSubject.next(false);
     this.webSocket = new WebSocket(this.convertToWebSocketUrl(UrlConstant.WEBSOCKET));
     this.webSocket.onerror = eventError => {
       console.error('WebSocket error', eventError);
@@ -104,12 +106,17 @@ export class WebSocketService {
           this.onReceiveChatState(message.data);
           break;
 
+        case WebsocketMsgModel.PONG_SUBJECT:
+          this.connectedSubject.next(true);
+          break;
+
         default:
           console.error('Message unknown : ', message);
       }
     };
 
     this.webSocket.onclose = eventClose => {
+      this.connectedSubject.next(false);
       console.info('WebSocket closed');
     };
   }
@@ -159,33 +166,52 @@ export class WebSocketService {
     channelSubject.next(currentValue);
   }
 
+  private whenConnected(): Promise<void> {
+    if (this.connectedSubject.value) {
+      return Promise.resolve();
+    } else {
+      return new Promise((resolve, reject) => {
+        const subscription = this.connectedSubject.subscribe(connected => {
+          if (connected) {
+            resolve();
+            subscription.unsubscribe();
+          }
+        });
+      });
+    }
+  }
+
   public sendMessage(channel: string, message: string) {
-    const webSocketMsg = {
-      subject: WebsocketMsgModel.CHANNEL_MESSAGE_SUBJECT,
-      data: {
-        channelId: channel,
-        message: message
-      }
-    } as WebsocketMsgModel;
-    this.webSocket.send(JSON.stringify(webSocketMsg));
+    this.whenConnected().then(() => {
+      const webSocketMsg = {
+        subject: WebsocketMsgModel.CHANNEL_MESSAGE_SUBJECT,
+        data: {
+          channelId: channel,
+          message: message
+        }
+      } as WebsocketMsgModel;
+      this.webSocket.send(JSON.stringify(webSocketMsg));
+    });
   }
 
   public connectToChannel(channelId: string) {
-    const channelSubject = this.getChannelSubject(channelId);
-    let currentValue = channelSubject.value;
+    this.whenConnected().then(() => {
+      const channelSubject = this.getChannelSubject(channelId);
+      let currentValue = channelSubject.value;
 
-    if (!currentValue || !currentValue.id) {
-      this.channelService.connect(channelId).then(channelFull => {
-        if (!currentValue) {
-          currentValue = new ChannelFullModel();
-          currentValue.messages = [];
-        }
+      if (!currentValue || !currentValue.id) {
+        this.channelService.connect(channelId).then(channelFull => {
+          if (!currentValue) {
+            currentValue = new ChannelFullModel();
+            currentValue.messages = [];
+          }
 
-        // Merge the response (channelFull) to the currentValue
-        currentValue = { ...channelFull, messages: currentValue.messages };
-        currentValue.messages.push(...channelFull.messages);
-        channelSubject.next(currentValue);
-      });
-    }
+          // Merge the response (channelFull) to the currentValue
+          currentValue = { ...channelFull, messages: currentValue.messages };
+          currentValue.messages.push(...channelFull.messages);
+          channelSubject.next(currentValue);
+        });
+      }
+    });
   }
 }
