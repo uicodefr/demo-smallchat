@@ -115,7 +115,7 @@ public class MainRouter {
     }
 
     public static <T> void mapResponse(Promise<T> servicePromise, RoutingContext requestHandler) {
-        servicePromise.future().setHandler(serviceResult -> {
+        servicePromise.future().onComplete(serviceResult -> {
             if (serviceResult.failed()) {
                 requestHandler.fail(serviceResult.cause());
                 return;

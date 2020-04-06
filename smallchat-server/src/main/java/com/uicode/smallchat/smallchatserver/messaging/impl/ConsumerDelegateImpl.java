@@ -127,7 +127,7 @@ public class ConsumerDelegateImpl implements ConsumerDelegate {
         KafkaConsumer<String, JsonObject> consumerForTopic = this.getConsumer(topic);
 
         changePosition(consumerForTopic, topic, messageToResend).future()
-            .<Void>mapEmpty().setHandler(result -> {
+            .<Void>mapEmpty().onComplete(result -> {
                 if (result.failed()) {
                     LOGGER.error("Resend Last Message Failed", result.cause());
                     promise.fail(result.cause());
@@ -161,7 +161,7 @@ public class ConsumerDelegateImpl implements ConsumerDelegate {
         ).compose(subscribeDone ->
             // 2. Change the position
             Future.<Map<TopicPartition,Long>>future(changePositionPromise ->
-                changePosition(anonymousConsumer, topic, messagesToGet).future().setHandler(changePositionPromise)
+                changePosition(anonymousConsumer, topic, messagesToGet).future().onComplete(changePositionPromise)
             )
 
         ).compose(changePositionResult ->
@@ -170,7 +170,7 @@ public class ConsumerDelegateImpl implements ConsumerDelegate {
             checkChangePositionResult(anonymousConsumer, changePositionResult).future()
 
         )
-        .setHandler(checkPositionResult -> {
+        .onComplete(checkPositionResult -> {
             if (checkPositionResult.failed()) {
                 resultPromise.fail(checkPositionResult.cause());
                 return;
@@ -201,7 +201,7 @@ public class ConsumerDelegateImpl implements ConsumerDelegate {
             });
         });
 
-        resultPromise.future().setHandler(result ->
+        resultPromise.future().onComplete(result ->
             // Close Consumer finally (on complete or on error)
             anonymousConsumer.close()
         );
@@ -226,7 +226,7 @@ public class ConsumerDelegateImpl implements ConsumerDelegate {
                 changePositionForPartitions(consumer, changeTopicPromise, topic, messagesToRewind, topicPartitionSet)
             )
 
-        ).setHandler(promise::handle);
+        ).onComplete(promise::handle);
 
         return promise;
     }
@@ -266,7 +266,7 @@ public class ConsumerDelegateImpl implements ConsumerDelegate {
             compositeFutures.add(localFuture);
         }
 
-        CompositeFuture.all(compositeFutures).setHandler(compositeResult -> {
+        CompositeFuture.all(compositeFutures).onComplete(compositeResult -> {
             if (compositeResult.failed()) {
                 finalPromise.fail(compositeResult.cause());
             } else {
@@ -306,7 +306,7 @@ public class ConsumerDelegateImpl implements ConsumerDelegate {
             });
         }
 
-        CompositeFuture.all(compositeFutures).setHandler(compositeResult -> {
+        CompositeFuture.all(compositeFutures).onComplete(compositeResult -> {
             if (compositeResult.failed()) {
                 checkedPositionPromise.fail(compositeResult.cause());
                 return;

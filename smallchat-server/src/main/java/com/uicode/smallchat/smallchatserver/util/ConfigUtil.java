@@ -51,7 +51,7 @@ public class ConfigUtil {
             Future<AppConfig> appConfigFuture = getAppConfig(vertx, envConfigResult.result());
 
             CompositeFuture.join(securityConfigFuture, appConfigFuture)
-                .setHandler(compositeHandler -> promise.complete());
+                .onComplete(compositeHandler -> promise.complete());
         });
 
         return promise;

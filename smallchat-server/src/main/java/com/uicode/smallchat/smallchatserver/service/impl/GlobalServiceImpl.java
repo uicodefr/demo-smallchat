@@ -63,7 +63,7 @@ public class GlobalServiceImpl implements GlobalService {
         // Test Messaging (kafka) and test parameterDao
         Future<String> testMessagingFuture = testMessaging().future();
         Future<Optional<String>> testDaoFuture = parameterDao.getParameterValue(ParameterConst.GENERAL_STATUS).future();
-        CompositeFuture.join(testMessagingFuture, testDaoFuture).setHandler(compositeResult -> {
+        CompositeFuture.join(testMessagingFuture, testDaoFuture).onComplete(compositeResult -> {
             if (testMessagingFuture.failed()) {
                 promise.fail(testMessagingFuture.cause());
                 return;
@@ -88,7 +88,7 @@ public class GlobalServiceImpl implements GlobalService {
             promise.complete(packageMsg.getNotice().getValue());
         });
 
-        producerDelegate.publish(new TestingNotice("kafka")).future().setHandler(recordResult -> {
+        producerDelegate.publish(new TestingNotice("kafka")).future().onComplete(recordResult -> {
             if (recordResult.failed()) {
                 promise.tryFail(recordResult.cause());
             }
@@ -104,7 +104,7 @@ public class GlobalServiceImpl implements GlobalService {
             countLikes.setCount(count);
             LOGGER.info("CountLikes return the value : {}", count);
             return countLikes;
-        }).setHandler(promise::handle);
+        }).onComplete(promise::handle);
         return promise;
     }
 
@@ -114,7 +114,7 @@ public class GlobalServiceImpl implements GlobalService {
         Future<Optional<String>> maxParamFuture = parameterDao.getParameterValue(ParameterConst.LIKE_MAX).future();
         Future<Long> countLikesFuture = likeDao.count().future();
 
-        CompositeFuture.join(maxParamFuture, countLikesFuture).setHandler(compositeResult -> {
+        CompositeFuture.join(maxParamFuture, countLikesFuture).onComplete(compositeResult -> {
             if (maxParamFuture.failed()) {
                 promise.fail(maxParamFuture.cause());
                 return;
@@ -133,7 +133,7 @@ public class GlobalServiceImpl implements GlobalService {
                 return;
             }
 
-            likeDao.insert(clientIp, new Date()).future().setHandler(insertResult -> {
+            likeDao.insert(clientIp, new Date()).future().onComplete(insertResult -> {
                 if (insertResult.failed()) {
                     promise.fail(insertResult.cause());
                     return;

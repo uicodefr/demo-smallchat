@@ -54,7 +54,7 @@ public class ChatStateServiceImpl implements ChatStateService {
     @Override
     public Promise<ChatState> getChatState() {
         Promise<ChatState> promise = Promise.promise();
-        getChatStateInternal().future().map(ChatStateInternal::toChatState).setHandler(promise::handle);
+        getChatStateInternal().future().map(ChatStateInternal::toChatState).onComplete(promise::handle);
         LOGGER.info("Get ChatState");
         return promise;
     }
@@ -67,7 +67,7 @@ public class ChatStateServiceImpl implements ChatStateService {
             return promise;
         }
 
-        initSubscribe().future().setHandler(initResult -> {
+        initSubscribe().future().onComplete(initResult -> {
             if (initResult.failed()) {
                 LOGGER.error("Init subscribe for ChatState failed", initResult.cause());
                 promise.fail(initResult.cause());
@@ -93,7 +93,7 @@ public class ChatStateServiceImpl implements ChatStateService {
 
         }, subscribeCompletion -> 
             // Resend Last Message after subscription
-            consumerDelegate.resendLastMessages(ChatStateNotice.TOPIC, 1).future().setHandler(resendResult -> {
+            consumerDelegate.resendLastMessages(ChatStateNotice.TOPIC, 1).future().onComplete(resendResult -> {
                 if (resendResult.failed()) {
                     promise.fail(resendResult.cause());
                 } else {
@@ -138,7 +138,7 @@ public class ChatStateServiceImpl implements ChatStateService {
 
     private <T> Promise<T> changeChatState(Function<ChatStateInternal, T> action) {
         Promise<T> promise = Promise.promise();
-        getChatStateInternal().future().setHandler(chatStateResult -> {
+        getChatStateInternal().future().onComplete(chatStateResult -> {
             if (chatStateResult.failed()) {
                 promise.fail(chatStateResult.cause());
                 return;
@@ -150,7 +150,7 @@ public class ChatStateServiceImpl implements ChatStateService {
             // Publish the newChatState on Kafka
             ChatStateNotice message = new ChatStateNotice();
             message.setChatState(newChatState);
-            producerDelegate.publish(message).future().setHandler(publishResult -> {
+            producerDelegate.publish(message).future().onComplete(publishResult -> {
                 if (publishResult.failed()) {
                     promise.fail(publishResult.cause());
                 } else {

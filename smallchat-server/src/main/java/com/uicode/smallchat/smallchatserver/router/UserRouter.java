@@ -37,7 +37,7 @@ public class UserRouter {
         if (jwtCookie == null) {
             requestHandler.next();
         } else {
-            userService.authenticate(jwtCookie.getValue()).future().setHandler(serviceResult -> {
+            userService.authenticate(jwtCookie.getValue()).future().onComplete(serviceResult -> {
                 if (serviceResult.failed()) {
                     expireCookie(jwtCookie);
                     requestHandler.fail(new InvalidJWTException("Invalid JWT Token", serviceResult.cause()));
@@ -53,7 +53,7 @@ public class UserRouter {
         String username = requestHandler.request().getFormAttribute("username");
         String password = requestHandler.request().getFormAttribute("password");
 
-        userService.login(username, password).future().setHandler(serviceResult -> {
+        userService.login(username, password).future().onComplete(serviceResult -> {
             if (serviceResult.failed()) {
                 requestHandler.fail(serviceResult.cause());
                 return;

@@ -57,7 +57,7 @@ public class WebSocketServerImpl implements WebSocketServer {
             return;
         }
 
-        authenticate(serverWebSocket.headers()).future().setHandler(userResult -> {
+        authenticate(serverWebSocket.headers()).future().onComplete(userResult -> {
             if (userResult.failed()) {
                 LOGGER.warn("WebSocket authentication failed", userResult.cause());
                 serverWebSocket.reject(HttpStatus.UNAUTHORIZED.value());
@@ -129,7 +129,7 @@ public class WebSocketServerImpl implements WebSocketServer {
         }
 
         this.webSocketMediator.authenticateUser(jwtTokenCookie.get().value()).future()
-            .setHandler(authenticateResult -> {
+            .onComplete(authenticateResult -> {
                 if (authenticateResult.failed()) {
                     result.fail(authenticateResult.cause());
                 } else {

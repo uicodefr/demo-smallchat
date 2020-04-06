@@ -76,7 +76,7 @@ public class ProducerDelegateImpl implements ProducerDelegate {
         Promise<RecordMetadata> promise = Promise.promise();
         this.initProducer();
 
-        createTopic(message.getTopic()).future().setHandler(creationResult -> {
+        createTopic(message.getTopic()).future().onComplete(creationResult -> {
             if (creationResult.failed()) {
                 promise.fail(creationResult.cause());
                 return;
@@ -88,7 +88,7 @@ public class ProducerDelegateImpl implements ProducerDelegate {
             globalProducer.send(record, promise::handle);
         });
         
-        promise.future().setHandler(publishResult -> {
+        promise.future().onComplete(publishResult -> {
             if (publishResult.failed()) {
                 LOGGER.error("Error when publishing", publishResult.cause());
             }

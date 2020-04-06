@@ -98,7 +98,7 @@ public class ChannelServiceImpl implements ChannelService {
             .map(channelNoticeList -> channelNoticeList.stream().map(ChannelNotice::getChannelMessage)
                     .collect(Collectors.toList()));
 
-        CompositeFuture.all(channelFuture, messagesFuture).setHandler(compositeResult -> {
+        CompositeFuture.all(channelFuture, messagesFuture).onComplete(compositeResult -> {
             if (compositeResult.failed()) {
                 promise.fail(compositeResult.cause());
                 return;

@@ -20,7 +20,6 @@ public abstract class AbstractDao {
         if (sqlClient == null) {
             JsonObject jdbcConfig = new JsonObject();
             jdbcConfig.put("url", "jdbc:sqlite:" + ConfigUtil.getConfig().getSqlitePath());
-            jdbcConfig.put("driver_class", "org.sqlite.jdbcDriver");
 
             sqlClient = JDBCClient.createShared(vertx, jdbcConfig);
         }

@@ -19,15 +19,18 @@ jobs:
     - name: Set up JDK
       uses: actions/setup-java@v1
       with:
-        java-version: 1.8
+        java-version: 11
 
     - name: Init
       run: |
         version=$(sed "s/^\t<version>\(.*\)<\/version>$/\1/;t;d" pom.xml)
         echo "Version: "$version
         if [[ $version =~ "SNAPSHOT" ]]; then
-          echo ERROR: Wrong version 1>&2
-          exit 1
+          echo "INFO: Remove SNAPSHOT From version"
+          version=${version/-SNAPSHOT/}
+          cd ..
+          ./version.sh $version
+          cd smallchat-server
         fi
         echo $version > ../server-version.txt
         mkdir -p ~/.m2
@@ -72,8 +75,11 @@ jobs:
         version=$(sed "s/^  \"version\": \"\(.*\)\",$/\1/;t;d" package.json)
         echo "Version: "$version
         if [[ $version =~ "SNAPSHOT" ]]; then
-          echo ERROR: Wrong version 1>&2
-          exit 1
+          echo "INFO: Remove SNAPSHOT From version"
+          version=${version/-SNAPSHOT/}
+          cd ..
+          ./version.sh $version
+          cd smallchat-client
         fi
         echo $version > ../client-version.txt
       working-directory: ${{ env.working-directory }}

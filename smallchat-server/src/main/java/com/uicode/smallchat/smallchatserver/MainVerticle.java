@@ -35,7 +35,7 @@ public class MainVerticle extends AbstractVerticle {
 
         LOGGER.info("Application starting");
 
-        ConfigUtil.initConfig(vertx).future().compose(mapper -> InitDatabaseDao.init(vertx).future()).setHandler(initDbResult -> {
+        ConfigUtil.initConfig(vertx).future().compose(mapper -> InitDatabaseDao.init(vertx).future()).onComplete(initDbResult -> {
             if (initDbResult.failed()) {
                 startPromise.fail(initDbResult.cause());
                 return;
