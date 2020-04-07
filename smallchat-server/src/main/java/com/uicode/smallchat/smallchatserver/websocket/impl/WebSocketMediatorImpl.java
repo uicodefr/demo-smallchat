@@ -42,6 +42,11 @@ public class WebSocketMediatorImpl implements WebSocketMediator {
     }
 
     @Override
+    public void disconnectSubscription(String userId, String subscriptionId) {
+        channelService.disconnectSubscription(userId, subscriptionId);
+    }
+
+    @Override
     public void receiveUserConnection(String userId, boolean connection) {
         chatStateService.receiveUserConnection(userId, connection);
     }
@@ -53,7 +58,7 @@ public class WebSocketMediatorImpl implements WebSocketMediator {
 
     @Override
     public void receiveSendMessage(String userId, String channelId, String message) {
-        channelService.sendMessage(userId, channelId, message);
+        channelService.sendUserMessage(userId, channelId, message);
     }
 
 }

@@ -115,18 +115,15 @@ public class MainRouter {
     }
 
     public static <T> void mapResponse(Promise<T> servicePromise, RoutingContext requestHandler) {
-        servicePromise.future().onComplete(serviceResult -> {
-            if (serviceResult.failed()) {
-                requestHandler.fail(serviceResult.cause());
-                return;
-            }
-
-            if (serviceResult.result() != null) {
-                requestHandler.response().end(Json.encode(serviceResult.result()));
-            } else {
-                requestHandler.response().end();
-            }
-        });
+        servicePromise.future()
+            .onFailure(requestHandler::fail)
+            .onSuccess(serviceResult -> {
+                if (serviceResult != null) {
+                    requestHandler.response().end(Json.encode(serviceResult));
+                } else {
+                    requestHandler.response().end();
+                }
+            });
     }
 
     public static Optional<String> getUserId(RoutingContext requestHandler) {

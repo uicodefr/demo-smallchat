@@ -4,11 +4,11 @@ import { AuthenticationService } from '../../../service/auth/authentication.serv
 import { Subscription } from 'rxjs';
 
 interface Props {
-  userRole?: string;
+  userRole: string;
   not?: boolean;
 }
 interface State {
-  currentUser: UserModel;
+  currentUser: UserModel | null;
 }
 
 export class HasRoleUser extends React.Component<Props, State> {
@@ -21,7 +21,7 @@ export class HasRoleUser extends React.Component<Props, State> {
 
   private currentUserSubscription: Subscription;
 
-  constructor(props) {
+  constructor(props: Props) {
     super(props);
 
     this.authenticationService = AuthenticationService.get();

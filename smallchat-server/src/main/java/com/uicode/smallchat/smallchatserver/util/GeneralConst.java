@@ -8,4 +8,6 @@ public interface GeneralConst {
 
     public static final String SUBSCRIPTION_CHANNEL_PREFIX = "channel.";
 
+    public static final String SERVER_USERNAME = "#server";
+
 }

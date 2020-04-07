@@ -35,31 +35,28 @@ public class MainVerticle extends AbstractVerticle {
 
         LOGGER.info("Application starting");
 
-        ConfigUtil.initConfig(vertx).future().compose(mapper -> InitDatabaseDao.init(vertx).future()).onComplete(initDbResult -> {
-            if (initDbResult.failed()) {
-                startPromise.fail(initDbResult.cause());
-                return;
-            }
-            
-            MainRouter mainRouter = injector.getInstance(MainRouter.class);
-            WebSocketServer webSocketHandler = injector.getInstance(WebSocketServer.class);
-            Integer httpPort = ConfigUtil.getConfig().getHttpPort();
+        ConfigUtil.initConfig(vertx).future().compose(mapper -> InitDatabaseDao.init(vertx).future())
+            .onFailure(startPromise::fail)
+            .onSuccess(initDbResult -> {
+                MainRouter mainRouter = injector.getInstance(MainRouter.class);
+                WebSocketServer webSocketHandler = injector.getInstance(WebSocketServer.class);
+                Integer httpPort = ConfigUtil.getConfig().getHttpPort();
 
-            // Http Server
-            mainRouter.mountRouter();
-            HttpServer httpServer = vertx.createHttpServer().requestHandler(mainRouter.getRouter());
-            httpServer.webSocketHandler(webSocketHandler::handleWebSocket);
-            httpServer.listen(httpPort, http -> {
-                if (http.succeeded()) {
-                    startPromise.complete();
-                    LOGGER.info(String.format("HTTP server started on : %d", httpPort));
-                } else {
-                    startPromise.fail(http.cause());
-                    LOGGER.error("HTTP server error", http.cause());
-                }
+                // Http Server
+                mainRouter.mountRouter();
+                HttpServer httpServer = vertx.createHttpServer().requestHandler(mainRouter.getRouter());
+                httpServer.webSocketHandler(webSocketHandler::handleWebSocket);
+                httpServer.listen(httpPort, http -> {
+                    if (http.succeeded()) {
+                        startPromise.complete();
+                        LOGGER.info(String.format("HTTP server started on : %d", httpPort));
+                    } else {
+                        startPromise.fail(http.cause());
+                        LOGGER.error("HTTP server error", http.cause());
+                    }
+                });
+
             });
-
-        });
     }
 
 }

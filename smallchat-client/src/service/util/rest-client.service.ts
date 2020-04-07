@@ -5,8 +5,8 @@ import { GlobalInfoService } from './global-info.service';
 export class RestClientService {
   private static readonly INSTANCE = new RestClientService();
 
-  private globalInfoService: GlobalInfoService = null;
-  private axiosInstance: AxiosInstance = null;
+  private globalInfoService: GlobalInfoService;
+  private axiosInstance: AxiosInstance;
 
   private constructor() {
     this.globalInfoService = GlobalInfoService.get();
@@ -46,11 +46,11 @@ export class RestClientService {
     return this.axiosInstance.get(url).then(response => response.data);
   }
 
-  public post<T>(url: string, body: object): Promise<T> {
+  public post<T>(url: string, body: object | null): Promise<T> {
     return this.axiosInstance.post(url, body).then(response => response.data);
   }
 
-  public patch<T>(url: string, body: object): Promise<T> {
+  public patch<T>(url: string, body: object | null): Promise<T> {
     return this.axiosInstance.patch(url, body).then(response => response.data);
   }
 

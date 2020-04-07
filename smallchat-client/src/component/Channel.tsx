@@ -15,11 +15,11 @@ import { Subscription } from 'rxjs';
 import { ChannelPanel } from './channel/ChannelPanel';
 
 interface Props {
-  match: match; // For Routing
+  match: match<{ channelId: '' }>; // For Routing
 }
 interface State {
-  chatState: ChatStateModel;
-  currentUser: UserModel;
+  chatState: ChatStateModel | null;
+  currentUser: UserModel | null;
   selectedChannelId: string;
 }
 
@@ -39,7 +39,7 @@ export class Channel extends React.Component<Props, State> {
     this.state = {
       chatState: this.webSocketService.getChatState(),
       currentUser: this.authenticationService.getCurrentUser(),
-      selectedChannelId: this.props.match?.params['channelId']
+      selectedChannelId: this.props.match?.params?.channelId
     };
   }
 
@@ -61,7 +61,7 @@ export class Channel extends React.Component<Props, State> {
     }
   }
 
-  componentDidUpdate(prevProps) {
+  componentDidUpdate(prevProps: Props) {
     if (this.props.match?.params['channelId'] !== prevProps.match?.params['channelId']) {
       this.setState({
         selectedChannelId: this.props.match?.params['channelId']
@@ -107,7 +107,7 @@ export class Channel extends React.Component<Props, State> {
                 <>
                   <p>Before sending messages to channels or to users, sign in.</p>
                   <p>
-                    <LinkContainer to="/login">
+                    <LinkContainer to="/signin">
                       <Button variant="primary">Sign In</Button>
                     </LinkContainer>
                   </p>

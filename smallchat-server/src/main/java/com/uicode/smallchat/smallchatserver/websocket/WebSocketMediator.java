@@ -9,6 +9,8 @@ public interface WebSocketMediator {
 
     void connectUserForSubscription(String userId, String subscriptionId, boolean connection);
 
+    void disconnectSubscription(String userId, String subscriptionId);
+
     void receiveUserConnection(String userId, boolean connection);
 
     <T> void send(String subscriptionId, T message);

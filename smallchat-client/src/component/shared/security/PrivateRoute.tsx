@@ -2,7 +2,7 @@ import { Route, Redirect } from 'react-router-dom';
 import React from 'react';
 import { AuthenticationService } from '../../../service/auth/authentication.service';
 
-const PrivateRoute = ({ component: Component, ...otherProps }) => {
+const PrivateRoute = ({ component: Component, ...otherProps }: any) => {
   const isLogin = () => {
     return !!AuthenticationService.get().getCurrentUser();
   };

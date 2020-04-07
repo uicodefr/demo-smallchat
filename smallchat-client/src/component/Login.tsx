@@ -1,5 +1,5 @@
-import React from 'react';
 import './Login.scss';
+import React from 'react';
 import Card from 'react-bootstrap/Card';
 import Form from 'react-bootstrap/Form';
 import Button from 'react-bootstrap/Button';
@@ -16,7 +16,7 @@ import { Subscription } from 'rxjs';
 interface Props {}
 
 interface State {
-  currentUser: UserModel;
+  currentUser: UserModel | null;
   loginInProgress: boolean;
   redirectAfterLogin: boolean;
 }
@@ -81,7 +81,7 @@ export class Login extends React.Component<Props, State> {
     });
   }
 
-  handleClickLogout(event) {
+  handleClickLogout(event: React.MouseEvent) {
     this.authenticationService.logout();
   }
 
@@ -91,7 +91,10 @@ export class Login extends React.Component<Props, State> {
     }
 
     const schema = yup.object({
-      username: yup.string().required(),
+      username: yup
+        .string()
+        .required()
+        .matches(new RegExp(UserModel.USERNAME_PATTERN)),
       password: yup.string().required()
     });
     const initialValues = { username: '', password: '' };
@@ -102,7 +105,7 @@ export class Login extends React.Component<Props, State> {
         <Card body>
           {!this.state.currentUser ? (
             <Formik validationSchema={schema} onSubmit={this.handleSubmit} initialValues={initialValues}>
-              {({ values, handleChange, handleBlur, handleSubmit }) => (
+              {({ values, errors, handleChange, handleBlur, handleSubmit }) => (
                 <Form className="loginForm" onSubmit={handleSubmit}>
                   <Form.Group>
                     <Form.Label>Username</Form.Label>
@@ -111,9 +114,12 @@ export class Login extends React.Component<Props, State> {
                       type="text"
                       required
                       value={values.username}
+                      pattern={UserModel.USERNAME_PATTERN}
                       onChange={handleChange}
                       onBlur={handleBlur}
+                      isInvalid={!!errors.username}
                     />
+                    <Form.Control.Feedback type="invalid">{errors.username}</Form.Control.Feedback>
                   </Form.Group>
                   <Form.Group>
                     <Form.Label>Password</Form.Label>
@@ -124,7 +130,9 @@ export class Login extends React.Component<Props, State> {
                       value={values.password}
                       onChange={handleChange}
                       onBlur={handleBlur}
+                      isInvalid={!!errors.password}
                     />
+                    <Form.Control.Feedback type="invalid">{errors.password}</Form.Control.Feedback>
                   </Form.Group>
                   {!this.state.loginInProgress ? (
                     <div className="buttonZone">

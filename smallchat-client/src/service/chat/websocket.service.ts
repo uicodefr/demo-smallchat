@@ -3,7 +3,7 @@ import { ChatStateModel } from '../../model/chat/chat-state.model';
 import { WebsocketMsgModel } from '../../model/chat/websocket-msg.model';
 import { ChatService } from './chat.service';
 import { ChannelFullModel } from '../../model/channel/channel-full.model';
-import { ChannelMessage } from '../../model/channel/channel-message';
+import { ChannelMessage, MessageCode } from '../../model/channel/channel-message';
 import { ChannelService } from './channel.service';
 import { filter } from 'rxjs/operators';
 import { AuthenticationService } from '../auth/authentication.service';
@@ -19,9 +19,9 @@ export class WebSocketService {
   private webSocket: WebSocket;
   private connectedSubject = new BehaviorSubject<boolean>(false);
 
-  private currentUser: string;
-  private chatStateSubject = new BehaviorSubject<ChatStateModel>(null);
-  private channelSubjectMap = new Map<string, BehaviorSubject<ChannelFullModel>>();
+  private currentUser: string | undefined;
+  private chatStateSubject = new BehaviorSubject<ChatStateModel | null>(null);
+  private channelSubjectMap = new Map<string, BehaviorSubject<ChannelFullModel | null>>();
 
   private constructor() {
     this.chatService = ChatService.get();
@@ -36,24 +36,24 @@ export class WebSocketService {
     return this.INSTANCE;
   }
 
-  public getChatState(): ChatStateModel {
+  public getChatState(): ChatStateModel | null {
     return this.chatStateSubject.getValue();
   }
 
-  public getChatStateObservable(): Observable<ChatStateModel> {
+  public getChatStateObservable(): Observable<ChatStateModel | null> {
     return this.chatStateSubject.asObservable();
   }
 
-  private getChannelSubject(channelId: string): BehaviorSubject<ChannelFullModel> {
+  private getChannelSubject(channelId: string): BehaviorSubject<ChannelFullModel | null> {
     let channelSubject = this.channelSubjectMap.get(channelId);
     if (!channelSubject) {
-      channelSubject = new BehaviorSubject<ChannelFullModel>(null);
+      channelSubject = new BehaviorSubject<ChannelFullModel | null>(null);
       this.channelSubjectMap.set(channelId, channelSubject);
     }
     return channelSubject;
   }
 
-  public getChannelObservable(channelId: string): Observable<ChannelFullModel> {
+  public getChannelObservable(channelId: string): Observable<ChannelFullModel | null> {
     return this.getChannelSubject(channelId)
       .asObservable()
       .pipe(
@@ -61,14 +61,30 @@ export class WebSocketService {
           if (!channel) {
             return false;
           }
-          if (channel.messages) {
-            channel.messages.forEach(message => {
-              message.sentByCurrentUser = message.user === this.currentUser;
-            });
-          }
+          this.correctAndImproveChannel(channel);
           return true;
         })
       );
+  }
+
+  private correctAndImproveChannel(channel: ChannelFullModel) {
+    if (channel.messages) {
+      // Delete duplicate messages
+      channel.messages = channel.messages.reduce((accumulator, currentValue) => {
+        if (!accumulator.find(accumulatorElement => accumulatorElement.id === currentValue.id)) {
+          accumulator.push(currentValue);
+        }
+        return accumulator;
+      }, [] as Array<ChannelMessage>);
+
+      // Fill sentByCurrentUser
+      channel.messages.forEach(message => {
+        message.sentByCurrentUser = message.user === this.currentUser;
+      });
+
+      // Order by date
+      channel.messages.sort((message1, message2) => message1.date - message2.date);
+    }
   }
 
   public connectWebSocket() {
@@ -160,6 +176,9 @@ export class WebSocketService {
       currentValue = new ChannelFullModel();
       currentValue.messages = [];
     }
+    if (channelMessage.code === MessageCode.DELETED) {
+      currentValue.deleted = true;
+    }
 
     // Add the message in the channelObject
     currentValue.messages.push(channelMessage);
@@ -213,5 +232,11 @@ export class WebSocketService {
         });
       }
     });
+  }
+
+  public disconnectToChannel(channelId: string): Promise<void> {
+    const channelSubject = this.getChannelSubject(channelId);
+    channelSubject.next(null);
+    return this.channelService.disconnect(channelId);
   }
 }

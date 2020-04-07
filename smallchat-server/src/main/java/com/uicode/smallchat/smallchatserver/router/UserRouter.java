@@ -53,22 +53,20 @@ public class UserRouter {
         String username = requestHandler.request().getFormAttribute("username");
         String password = requestHandler.request().getFormAttribute("password");
 
-        userService.login(username, password).future().onComplete(serviceResult -> {
-            if (serviceResult.failed()) {
-                requestHandler.fail(serviceResult.cause());
-                return;
-            }
-            if (serviceResult.result().isPresent()) {
-                UserLoginData loginData = serviceResult.result().get();
-                Cookie jwtCookie = Cookie.cookie(GeneralConst.JWTTOKEN_COOKIE, loginData.getJwtToken());
-                jwtCookie.setHttpOnly(true);
-                jwtCookie.setMaxAge(43200);
-                requestHandler.addCookie(jwtCookie);
-                requestHandler.response().end(Json.encode(loginData.getUserPayload()));
-            } else {
-                requestHandler.response().end();
-            }
-        });
+        userService.login(username, password).future()
+            .onFailure(requestHandler::fail)
+            .onSuccess(serviceResult -> {
+                if (serviceResult.isPresent()) {
+                    UserLoginData loginData = serviceResult.get();
+                    Cookie jwtCookie = Cookie.cookie(GeneralConst.JWTTOKEN_COOKIE, loginData.getJwtToken());
+                    jwtCookie.setHttpOnly(true);
+                    jwtCookie.setMaxAge(43200);
+                    requestHandler.addCookie(jwtCookie);
+                    requestHandler.response().end(Json.encode(loginData.getUserPayload()));
+                } else {
+                    requestHandler.response().end();
+                }
+            });
     }
 
     private void logout(RoutingContext requestHandler) {

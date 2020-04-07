@@ -4,21 +4,21 @@ import java.util.Date;
 
 public class ChannelMessage {
 
-    public enum Type {
-        MESSAGE, SERVER_EVENT, CHANNEL_EVENT
+    public enum MessageCode {
+        MSG, CONNECT, DISCONNECT, CREATED, UPDATED, DELETED
     }
 
     private String id;
 
     private String channelId;
 
-    private Type type;
-
     private String message;
 
     private String user;
 
     private Date date;
+
+    private MessageCode code;
 
     public String getId() {
         return id;
@@ -34,14 +34,6 @@ public class ChannelMessage {
 
     public void setChannelId(String channelId) {
         this.channelId = channelId;
-    }
-
-    public Type getType() {
-        return type;
-    }
-
-    public void setType(Type type) {
-        this.type = type;
     }
 
     public String getMessage() {
@@ -66,6 +58,14 @@ public class ChannelMessage {
 
     public void setDate(Date date) {
         this.date = date;
+    }
+
+    public MessageCode getCode() {
+        return code;
+    }
+
+    public void setCode(MessageCode code) {
+        this.code = code;
     }
 
 }

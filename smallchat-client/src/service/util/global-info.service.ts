@@ -27,7 +27,7 @@ export class GlobalInfoService {
   }
 
   public showAlert(alertType: AlertType, message: string, duration?: number) {
-    if (isNaN(duration)) {
+    if (!duration || isNaN(duration)) {
       duration = GlobalConstant.NOTIFICATION_DELAY;
     }
 

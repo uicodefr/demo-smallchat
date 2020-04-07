@@ -6,8 +6,10 @@ import com.uicode.smallchat.smallchatserver.dao.global.LikeDao;
 import com.uicode.smallchat.smallchatserver.dao.global.ParameterDao;
 import com.uicode.smallchat.smallchatserver.dao.global.impl.LikeDaoImpl;
 import com.uicode.smallchat.smallchatserver.dao.global.impl.ParameterDaoImpl;
+import com.uicode.smallchat.smallchatserver.messaging.AdminTopicDelegate;
 import com.uicode.smallchat.smallchatserver.messaging.ConsumerDelegate;
 import com.uicode.smallchat.smallchatserver.messaging.ProducerDelegate;
+import com.uicode.smallchat.smallchatserver.messaging.impl.AdminTopicDelegateImpl;
 import com.uicode.smallchat.smallchatserver.messaging.impl.ConsumerDelegateImpl;
 import com.uicode.smallchat.smallchatserver.messaging.impl.ProducerDelegateImpl;
 import com.uicode.smallchat.smallchatserver.service.ChannelService;
@@ -39,6 +41,7 @@ public class MainModule extends AbstractModule {
 
         bind(ConsumerDelegate.class).to(ConsumerDelegateImpl.class).in(Scopes.SINGLETON);
         bind(ProducerDelegate.class).to(ProducerDelegateImpl.class).in(Scopes.SINGLETON);
+        bind(AdminTopicDelegate.class).to(AdminTopicDelegateImpl.class).in(Scopes.SINGLETON);
 
         bind(LikeDao.class).to(LikeDaoImpl.class).in(Scopes.SINGLETON);
         bind(ParameterDao.class).to(ParameterDaoImpl.class).in(Scopes.SINGLETON);

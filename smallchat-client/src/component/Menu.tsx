@@ -1,5 +1,5 @@
-import React from 'react';
 import './Menu.scss';
+import React from 'react';
 import { LinkContainer } from 'react-router-bootstrap';
 import Navbar from 'react-bootstrap/Navbar';
 import Nav from 'react-bootstrap/Nav';
@@ -21,7 +21,7 @@ export class Menu extends React.Component<Props, State> {
   constructor(props: Props) {
     super(props);
     this.state = {
-      likes: null
+      likes: 0
     };
 
     this.globalService = GlobalService.get();
@@ -43,13 +43,13 @@ export class Menu extends React.Component<Props, State> {
     });
   }
 
-  handleClickLike(event) {
+  handleClickLike(event: React.MouseEvent<any, any>) {
     this.globalService.addLike().then(() => {
       this.loadLikes();
     });
   }
 
-  handleClickLogout(event) {
+  handleClickLogout(event: React.MouseEvent<any, any>) {
     this.authenticationService.logout();
   }
 
@@ -71,8 +71,8 @@ export class Menu extends React.Component<Props, State> {
             <Nav.Link onClick={this.handleClickLogout}>Logout</Nav.Link>
           </HasRoleUser>
           <HasRoleUser not={true}>
-            <LinkContainer to="/login">
-              <Nav.Link>Login</Nav.Link>
+            <LinkContainer to="/signin">
+              <Nav.Link>Sign in</Nav.Link>
             </LinkContainer>
           </HasRoleUser>
         </Nav>

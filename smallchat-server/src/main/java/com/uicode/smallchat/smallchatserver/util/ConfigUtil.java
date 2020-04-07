@@ -50,8 +50,7 @@ public class ConfigUtil {
             Future<List<JsonObject>> securityConfigFuture = getSecurityConfig(vertx, envConfigResult.result());
             Future<AppConfig> appConfigFuture = getAppConfig(vertx, envConfigResult.result());
 
-            CompositeFuture.join(securityConfigFuture, appConfigFuture)
-                .onComplete(compositeHandler -> promise.complete());
+            CompositeFuture.all(securityConfigFuture, appConfigFuture).<Void>mapEmpty().onComplete(promise::handle);
         });
 
         return promise;
@@ -83,7 +82,7 @@ public class ConfigUtil {
                     if (configResult.failed()) {
                         securityConfigPromise.fail(configResult.cause());
                         return;
-                     }
+                    }
 
                     JsonArray jwksJsonArray = configResult.result().getJsonArray("jwks");
                     jwks = new ArrayList<>();
@@ -116,8 +115,8 @@ public class ConfigUtil {
             ConfigRetriever confRetriever = ConfigRetriever.create(vertx, options);
             confRetriever.getConfig(configResult -> {
                 if (configResult.failed()) {
-                   appConfigPromise.fail(configResult.cause());
-                   return;
+                    appConfigPromise.fail(configResult.cause());
+                    return;
                 }
 
                 appConfig = configResult.result().mapTo(AppConfig.class);

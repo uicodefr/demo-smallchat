@@ -9,7 +9,7 @@ export class AuthenticationService {
   private static readonly INSTANCE = new AuthenticationService();
 
   private restClientService: RestClientService;
-  private userSubject = new BehaviorSubject<UserModel>(null);
+  private userSubject = new BehaviorSubject<UserModel | null>(null);
 
   private constructor() {
     this.restClientService = RestClientService.get();
@@ -18,7 +18,7 @@ export class AuthenticationService {
     return this.INSTANCE;
   }
 
-  public login(username: string, password: string): Promise<UserModel> {
+  public login(username: string, password: string): Promise<UserModel | null> {
     let formData = new FormData();
     formData.append('username', username);
     formData.append('password', password);
@@ -26,7 +26,7 @@ export class AuthenticationService {
     return axios
       .post(UrlConstant.LOGIN, formData)
       .then(response => {
-        let user = null as UserModel;
+        let user = null;
         if (response.status === 200) {
           user = response.data;
           WebSocketService.get().connectWebSocket();
@@ -49,11 +49,11 @@ export class AuthenticationService {
     });
   }
 
-  public getCurrentUser(): UserModel {
+  public getCurrentUser(): UserModel | null {
     return this.userSubject.getValue();
   }
 
-  public getCurrentUserObservable(): Observable<UserModel> {
+  public getCurrentUserObservable(): Observable<UserModel | null> {
     return this.userSubject.asObservable();
   }
 

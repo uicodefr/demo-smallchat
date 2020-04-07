@@ -5,7 +5,7 @@ import { ChannelFullModel } from '../../model/channel/channel-full.model';
 export class ChannelService {
   private static readonly INSTANCE = new ChannelService();
 
-  private restClientService: RestClientService = null;
+  private restClientService: RestClientService;
 
   private constructor() {
     this.restClientService = RestClientService.get();
@@ -20,5 +20,9 @@ export class ChannelService {
 
   public connect(channelId: string): Promise<ChannelFullModel> {
     return this.restClientService.post(UrlConstant.Channel.CHANNEL + channelId + UrlConstant.Channel.CONNECT, null);
+  }
+
+  public disconnect(channelId: string): Promise<void> {
+    return this.restClientService.post(UrlConstant.Channel.CHANNEL + channelId + UrlConstant.Channel.DISCONNECT, null);
   }
 }

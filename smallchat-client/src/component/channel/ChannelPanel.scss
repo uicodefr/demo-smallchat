@@ -22,11 +22,10 @@
 
   .channelHeader {
     height: 50px;
-    .channelId {
+    .channelDisconnect {
       float: right;
       margin-top: -1rem;
-      color: rgba(0, 0, 0, 0.7);
-      font-size: 0.9rem;
+      margin-left: 1rem;
     }
     .channelName {
       display: inline-block;

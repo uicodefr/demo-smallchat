@@ -28,7 +28,8 @@ export class UrlConstant {
   private static readonly CHANNEL_PREFIX = UrlConstant.BASE + '/channels';
   public static readonly Channel = {
     CHANNEL: UrlConstant.CHANNEL_PREFIX + '/',
-    CONNECT: '/connect'
+    CONNECT: '/connect',
+    DISCONNECT: '/disconnect'
   };
 
   public static readonly WebSocket = {

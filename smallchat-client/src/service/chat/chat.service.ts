@@ -6,7 +6,7 @@ import { RestClientService } from '../util/rest-client.service';
 export class ChatService {
   private static readonly INSTANCE = new ChatService();
 
-  private restClientService: RestClientService = null;
+  private restClientService: RestClientService;
 
   private constructor() {
     this.restClientService = RestClientService.get();

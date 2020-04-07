@@ -169,18 +169,14 @@ public class ConsumerDelegateImpl implements ConsumerDelegate {
             // To Remove Empty TopicPartition
             checkChangePositionResult(anonymousConsumer, changePositionResult).future()
 
-        )
-        .onComplete(checkPositionResult -> {
-            if (checkPositionResult.failed()) {
-                resultPromise.fail(checkPositionResult.cause());
-                return;
-            }
-            if (checkPositionResult.result().isEmpty()) {
+        ).onFailure(resultPromise::fail)
+        .onSuccess(checkPositionResult -> {
+            if (checkPositionResult.isEmpty()) {
                 resultPromise.complete(resultList);
                 return;
             }
 
-            Map<TopicPartition, Long> endPositionForTopics = checkPositionResult.result();
+            Map<TopicPartition, Long> endPositionForTopics = checkPositionResult;
 
             // 4. Receive Messages and add it to the list
             // and complete when all messages are received
@@ -202,7 +198,7 @@ public class ConsumerDelegateImpl implements ConsumerDelegate {
         });
 
         resultPromise.future().onComplete(result ->
-            // Close Consumer finally (on complete or on error)
+            // Close Consumer finally (on success or on error)
             anonymousConsumer.close()
         );
 
@@ -266,13 +262,9 @@ public class ConsumerDelegateImpl implements ConsumerDelegate {
             compositeFutures.add(localFuture);
         }
 
-        CompositeFuture.all(compositeFutures).onComplete(compositeResult -> {
-            if (compositeResult.failed()) {
-                finalPromise.fail(compositeResult.cause());
-            } else {
-                finalPromise.complete(topicPartitionWithEndPosition);
-            }
-        });
+        CompositeFuture.all(compositeFutures)
+            .onFailure(finalPromise::fail)
+            .onSuccess(compositeResult -> finalPromise.complete(topicPartitionWithEndPosition));
     }
     
     private Promise<Map<TopicPartition,Long>> checkChangePositionResult(
@@ -306,13 +298,9 @@ public class ConsumerDelegateImpl implements ConsumerDelegate {
             });
         }
 
-        CompositeFuture.all(compositeFutures).onComplete(compositeResult -> {
-            if (compositeResult.failed()) {
-                checkedPositionPromise.fail(compositeResult.cause());
-                return;
-            }
-            checkedPositionPromise.complete(checkPositionResult);
-        });
+        CompositeFuture.all(compositeFutures)
+            .onFailure(checkedPositionPromise::fail)
+            .onSuccess(compositeResult -> checkedPositionPromise.complete(checkPositionResult));
 
         return checkedPositionPromise;
     }

@@ -9,13 +9,15 @@ import { Formik, FormikValues } from 'formik';
 import Form from 'react-bootstrap/Form';
 import { Subscription } from 'rxjs';
 import { ChatMessage } from './message/ChatMessage';
+import { Redirect } from 'react-router-dom';
 
 interface Props {
   channelId: string;
 }
 interface State {
   loading: boolean;
-  channel: ChannelFullModel;
+  channel: ChannelFullModel | null;
+  redirectAfterDisconnect: boolean;
 }
 
 export class ChannelPanel extends React.Component<Props, State> {
@@ -31,28 +33,36 @@ export class ChannelPanel extends React.Component<Props, State> {
 
     this.state = {
       loading: true,
-      channel: null
+      channel: null,
+      redirectAfterDisconnect: false
     };
 
     this.handleSendSubmit = this.handleSendSubmit.bind(this);
+    this.handleDisconnect = this.handleDisconnect.bind(this);
   }
 
-  componentDidMount() {
+  public componentDidMount() {
     this.loadChannel();
     this.scrollChannelShowToBottom();
   }
 
-  componentWillUnmount() {
+  public componentWillUnmount() {
     if (this.channelSubscription) {
       this.channelSubscription.unsubscribe();
     }
   }
 
-  componentDidUpdate(prevProps) {
+  public componentDidUpdate(prevProps: Props) {
     if (this.props.channelId !== prevProps.channelId) {
       this.loadChannel();
     }
     this.scrollChannelShowToBottom();
+  }
+
+  private scrollChannelShowToBottom() {
+    if (this.channelShowBottomRef.current) {
+      this.channelShowBottomRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
   }
 
   private loadChannel() {
@@ -86,23 +96,33 @@ export class ChannelPanel extends React.Component<Props, State> {
     this.webSocketService.connectToChannel(channelId);
   }
 
-  handleSendSubmit(formSendValues: FormikValues, { setFieldValue }) {
+  public handleSendSubmit(
+    formSendValues: FormikValues,
+    options: { setFieldValue: (field: string, value: any, shouldValidate?: boolean) => void }
+  ) {
     const message = formSendValues['messageTxt'].trim();
     if (!this.state.channel || !message) {
       return;
     }
 
     this.webSocketService.sendMessage(this.state.channel.id, message);
-    setFieldValue('messageTxt', '');
+    options.setFieldValue('messageTxt', '');
   }
 
-  scrollChannelShowToBottom() {
-    if (this.channelShowBottomRef.current) {
-      this.channelShowBottomRef.current.scrollIntoView({ behavior: 'smooth' });
+  public handleDisconnect(event: React.MouseEvent) {
+    if (!this.props.channelId) {
+      return;
     }
+    this.webSocketService.disconnectToChannel(this.props.channelId).then(() => {
+      this.setState({ redirectAfterDisconnect: true });
+    });
   }
 
-  render() {
+  public render() {
+    if (this.state.redirectAfterDisconnect) {
+      return <Redirect to="/" />;
+    }
+
     const initValues = { messageTxt: '' };
     return (
       <Jumbotron className="ChannelPanel">
@@ -115,7 +135,11 @@ export class ChannelPanel extends React.Component<Props, State> {
         ) : (
           <>
             <div className="channelHeader">
-              <span className="channelId"> {this.state.channel.id} </span>
+              <span className="channelDisconnect">
+                <Button variant="warning" size="sm" title="Leave channel" onClick={this.handleDisconnect}>
+                  Leave
+                </Button>
+              </span>
               <h1 className="channelName"> {this.state.channel.name} </h1>
               <span className="channelDescription"> {this.state.channel.description} </span>
             </div>
@@ -140,7 +164,7 @@ export class ChannelPanel extends React.Component<Props, State> {
                           value={values.messageTxt}
                           onChange={handleChange}
                           onBlur={handleBlur}
-                          isInvalid={!!errors.id}
+                          isInvalid={!!errors.messageTxt}
                         />
                       </Form.Group>
                     </div>

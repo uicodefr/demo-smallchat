@@ -1,6 +1,6 @@
 import React from 'react';
 import './ChatMessage.scss';
-import { ChannelMessage } from '../../../model/channel/channel-message';
+import { ChannelMessage, MessageCode } from '../../../model/channel/channel-message';
 
 interface Props {
   message: ChannelMessage;
@@ -29,13 +29,18 @@ export class ChatMessage extends React.Component<Props, State> {
   }
 
   render() {
-    return (
+    return this.props.message.code === MessageCode.MSG ? (
       <div className={this.getClassNameForMessage(this.props.message)}>
         <div>
           <span className="user">{this.props.message.user}</span>
           <span className="date">{this.formatDate(this.props.message.date)}</span>
         </div>
         <div className="message">{this.props.message.message}</div>
+      </div>
+    ) : (
+      <div className="ChatMessage technicalMessage">
+        <span className="message">{this.props.message.message}</span>
+        <span className="date">{this.formatDate(this.props.message.date)}</span>
       </div>
     );
   }

@@ -9,7 +9,7 @@ import * as yup from 'yup';
 interface Props {
   show: boolean;
   channel: ChannelModel;
-  onSave: (channel) => void;
+  onSave: (channel: ChannelModel) => void;
   onCancel: () => void;
 }
 
@@ -29,7 +29,7 @@ export class SaveChannelDialog extends React.Component<Props, State> {
     this.handleSubmit = this.handleSubmit.bind(this);
   }
 
-  componentDidUpdate(prevProps) {
+  componentDidUpdate(prevProps: Props) {
     if (prevProps.show !== this.props.show) {
       this.setState({
         validatedForm: false
@@ -62,7 +62,7 @@ export class SaveChannelDialog extends React.Component<Props, State> {
       id: yup
         .string()
         .required()
-        .matches(ChannelModel.ID_PATTERN),
+        .matches(new RegExp(ChannelModel.ID_PATTERN)),
       name: yup.string().required(),
       description: yup.string()
     });

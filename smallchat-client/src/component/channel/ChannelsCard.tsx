@@ -19,10 +19,10 @@ import { TransitionGroup, CSSTransition } from 'react-transition-group';
 interface Props {}
 
 interface State {
-  chatState: ChatStateModel;
+  chatState: ChatStateModel | null;
   settings: boolean;
   editChannels: Array<ChannelModel>;
-  currentChannel: ChannelModel;
+  currentChannel: ChannelModel | null;
   showSaveDialog: boolean;
   showDeleteDialog: boolean;
 }
@@ -46,7 +46,7 @@ export class ChannelsCard extends React.Component<Props, State> {
       settings: false,
       editChannels: [],
       currentChannel: null,
-      showSaveDialog: null,
+      showSaveDialog: false,
       showDeleteDialog: false
     };
 
@@ -78,7 +78,7 @@ export class ChannelsCard extends React.Component<Props, State> {
     }
   }
 
-  handleClickSettings(event) {
+  handleClickSettings(event: React.MouseEvent) {
     if (!this.state.chatState) {
       return;
     }
@@ -119,7 +119,7 @@ export class ChannelsCard extends React.Component<Props, State> {
       showSaveDialog: false
     });
 
-    if (this.state.currentChannel.id) {
+    if (this.state.currentChannel?.id) {
       this.chatService.updateChannel(channel).then(() => {
         this.globalInfoService.showAlert(AlertType.SUCCESS, 'Channel "' + channel.id + '" updated');
       });
@@ -141,9 +141,9 @@ export class ChannelsCard extends React.Component<Props, State> {
     this.setState({
       showDeleteDialog: false
     });
-    if (confirm) {
+    if (confirm && this.state.currentChannel) {
       this.chatService.deleteChannel(this.state.currentChannel.id).then(() => {
-        this.globalInfoService.showAlert(AlertType.SUCCESS, 'Channel "' + this.state.currentChannel.id + '" deleted');
+        this.globalInfoService.showAlert(AlertType.SUCCESS, 'Channel "' + this.state.currentChannel?.id + '" deleted');
       });
     }
   }

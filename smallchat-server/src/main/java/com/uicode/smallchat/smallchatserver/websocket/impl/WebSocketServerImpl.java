@@ -77,6 +77,7 @@ public class WebSocketServerImpl implements WebSocketServer {
                 webSocketMediator.receiveUserConnection(userId, false);
                 for (String subscriptionId : subscriptions.keySet()) {
                     getSubscriptionList(subscriptionId).remove(currentConnection);
+                    webSocketMediator.disconnectSubscription(userId, subscriptionId);
                 }
             });
 
