@@ -21,9 +21,8 @@ public class MainVerticle extends AbstractVerticle {
     private static final Logger LOGGER = LogManager.getLogger(MainVerticle.class);
 
     public static void main(String[] args) {
-
         VertxOptions vertxOptions = new VertxOptions();
-        // Uncomment the line below in debug
+        // Uncomment the line below in debug to avoid pollution of warning
         // vertxOptions.setBlockedThreadCheckInterval(999888777666L);
         Vertx myVertx = Vertx.vertx(vertxOptions);
         myVertx.deployVerticle(new MainVerticle());
@@ -32,6 +31,7 @@ public class MainVerticle extends AbstractVerticle {
     @Override
     public void start(Promise<Void> startPromise) throws Exception {
         Injector injector = Guice.createInjector(new MainModule(vertx));
+        Vertx.vertx().exceptionHandler(exception -> LOGGER.error("Unhandled exception", exception));
 
         LOGGER.info("Application starting");
 

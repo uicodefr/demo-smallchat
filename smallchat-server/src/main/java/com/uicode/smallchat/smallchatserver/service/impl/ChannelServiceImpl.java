@@ -74,19 +74,15 @@ public class ChannelServiceImpl implements ChannelService {
     public Promise<ChannelFull> connect(String userId, String channelId) {
         Promise<ChannelFull> promise = Promise.promise();
         LOGGER.info("User {} connect to {}", userId, channelId);
+        String connectionMessage = String.format(CONNECTION_MESSAGE, userId);
 
         consumerDelegate.refreshSubscribe(ChannelNotice.TOPIC + ".*");
-        sendServerMessage(channelId, String.format(CONNECTION_MESSAGE, userId), MessageCode.CONNECT).future()
-            .compose(sendResult -> getChannel(channelId).future())
-            .onFailure(promise::fail)
-            .onSuccess(channel -> {
-                try {
-                    webSocketMediator.connectUserForSubscription(userId, getSubscriptionId(channelId), true);
-                    promise.complete(channel);
-                } catch(Exception exception) {
-                    promise.tryFail(exception);
-                }
-            });
+        webSocketMediator.connectUserForSubscription(userId, getSubscriptionId(channelId), true);
+        getChannel(channelId).future()
+            .compose(channel ->
+                sendServerMessage(channelId, connectionMessage, MessageCode.CONNECT).future().map(channel)
+            )
+            .onComplete(promise::handle);
 
         return promise;
     }
@@ -95,17 +91,14 @@ public class ChannelServiceImpl implements ChannelService {
     public Promise<Void> disconnect(String userId, String channelId) {
         Promise<Void> promise = Promise.promise();
         LOGGER.info("User {} disconnect to {}", userId, channelId);
+        String disconnectionMessage = String.format(DISCONNECTION_MESSAGE, userId);
 
-        sendServerMessage(channelId, String.format(DISCONNECTION_MESSAGE, userId), MessageCode.DISCONNECT).future()
-            .onFailure(promise::fail)
-            .onSuccess(sendResult -> {
-                try {
-                    webSocketMediator.connectUserForSubscription(userId, getSubscriptionId(channelId), false);
-                    promise.complete();
-                } catch(Exception exception) {
-                    promise.tryFail(exception);
-                }
-            });
+        sendServerMessage(channelId, disconnectionMessage, MessageCode.DISCONNECT).future()
+            .compose(channelMessage -> Future.<Void>future(disconnectWebSocketPromise -> {
+                webSocketMediator.connectUserForSubscription(userId, getSubscriptionId(channelId), false);
+                disconnectWebSocketPromise.complete();
+            }))
+            .onComplete(promise::handle);
 
         return promise;
     }

@@ -101,7 +101,7 @@ export class ChannelPanel extends React.Component<Props, State> {
     options: { setFieldValue: (field: string, value: any, shouldValidate?: boolean) => void }
   ) {
     const message = formSendValues['messageTxt'].trim();
-    if (!this.state.channel || !message) {
+    if (!this.state.channel || this.state.channel.deleted || !message) {
       return;
     }
 
@@ -110,7 +110,8 @@ export class ChannelPanel extends React.Component<Props, State> {
   }
 
   public handleDisconnect(event: React.MouseEvent) {
-    if (!this.props.channelId) {
+    if (!this.state.channel || this.state.channel.deleted) {
+      this.setState({ redirectAfterDisconnect: true });
       return;
     }
     this.webSocketService.disconnectToChannel(this.props.channelId).then(() => {
@@ -124,6 +125,7 @@ export class ChannelPanel extends React.Component<Props, State> {
     }
 
     const initValues = { messageTxt: '' };
+    const disabledForm = this.state.channel?.deleted === true;
     return (
       <Jumbotron className="ChannelPanel">
         {this.state.loading ? (
@@ -165,12 +167,13 @@ export class ChannelPanel extends React.Component<Props, State> {
                           onChange={handleChange}
                           onBlur={handleBlur}
                           isInvalid={!!errors.messageTxt}
+                          disabled={disabledForm}
                         />
                       </Form.Group>
                     </div>
 
                     <div className="buttonZone">
-                      <Button variant="primary" type="submit">
+                      <Button variant="primary" type="submit" disabled={disabledForm}>
                         Send
                       </Button>
                     </div>

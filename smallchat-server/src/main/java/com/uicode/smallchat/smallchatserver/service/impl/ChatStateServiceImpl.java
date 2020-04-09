@@ -10,6 +10,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.google.inject.Inject;
+import com.uicode.smallchat.smallchatserver.exception.LimitationException;
 import com.uicode.smallchat.smallchatserver.exception.NotFoundException;
 import com.uicode.smallchat.smallchatserver.messaging.AdminTopicDelegate;
 import com.uicode.smallchat.smallchatserver.messaging.ConsumerDelegate;
@@ -34,6 +35,7 @@ public class ChatStateServiceImpl implements ChatStateService {
 
     private static final Logger LOGGER = LogManager.getLogger(ChatStateServiceImpl.class);
 
+    private static final Integer MAX_CHANNEL = 50;
     private static final String CREATED_CHANNEL_MESSAGE = "channel created";
     private static final String DELETED_CHANNEL_MESSAGE = "channel deleted";
 
@@ -169,13 +171,15 @@ public class ChatStateServiceImpl implements ChatStateService {
         LOGGER.info("Create channel with id : {}", newChannel.getId());
         String topic = ChannelNotice.getTopicForChannelId(newChannel.getId());
 
-        // TODO Add a max value to block creating channel on a limit
-
         // First, Create the topic if necessary
         adminTopicDelegate.createTopicIfNecessary(topic).future()
         .compose(creationTopicResult ->
             // Second, Change the chatState for creating the channel
             changeChatState(newChatState -> {
+                if (newChatState.getChannels().size() > MAX_CHANNEL) {
+                    throw new LimitationException("Create channel failed because channels can not exceed " + MAX_CHANNEL);
+                }
+
                 newChannel.setDelete(false);
                 newChatState.getChannels().put(newChannel.getId(), newChannel);
                 return newChannel;

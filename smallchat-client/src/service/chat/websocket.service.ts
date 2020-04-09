@@ -165,8 +165,6 @@ export class WebSocketService {
         channelSubject.next(channelFull);
       }
     });
-
-    this.channelSubjectMap.forEach((channelSubject, channelId) => {});
   }
 
   private onReceiveChannelMessage(channelMessage: ChannelMessage) {
@@ -179,10 +177,13 @@ export class WebSocketService {
     if (channelMessage.code === MessageCode.DELETED) {
       currentValue.deleted = true;
     }
-
     // Add the message in the channelObject
     currentValue.messages.push(channelMessage);
     channelSubject.next(currentValue);
+
+    if (channelMessage.code === MessageCode.DELETED) {
+      channelSubject.next(null);
+    }
   }
 
   private whenConnected(): Promise<void> {

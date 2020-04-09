@@ -16,6 +16,9 @@
       font-size: 0.7rem;
     }
   }
+  &.importantTechnicalMessage {
+    font-weight: bold;
+  }
 
   .user {
     display: inline-block;

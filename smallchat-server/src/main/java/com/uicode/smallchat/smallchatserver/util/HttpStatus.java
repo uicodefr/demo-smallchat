@@ -10,6 +10,8 @@ public enum HttpStatus {
 
     NOT_FOUND(404, "Not Found"),
 
+    CONFLICT(409, "Conflict"),
+
     I_AM_A_TEAPOT(418, "I'm a teapot"),
 
     INTERNAL_SERVER_ERROR(500, "Internal Server Error");

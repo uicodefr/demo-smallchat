@@ -9,10 +9,18 @@ interface State {}
 
 export class ChatMessage extends React.Component<Props, State> {
   getClassNameForMessage(message: ChannelMessage) {
-    if (message.sentByCurrentUser) {
-      return 'ChatMessage sentMessage';
+    if (message.code === MessageCode.MSG) {
+      if (message.sentByCurrentUser) {
+        return 'ChatMessage sentMessage';
+      } else {
+        return 'ChatMessage receivedMessage';
+      }
     } else {
-      return 'ChatMessage receivedMessage';
+      if (message.code === MessageCode.DELETED) {
+        return 'ChatMessage importantTechnicalMessage';
+      } else {
+        return 'ChatMessage technicalMessage';
+      }
     }
   }
 
@@ -38,7 +46,7 @@ export class ChatMessage extends React.Component<Props, State> {
         <div className="message">{this.props.message.message}</div>
       </div>
     ) : (
-      <div className="ChatMessage technicalMessage">
+      <div className={this.getClassNameForMessage(this.props.message)}>
         <span className="message">{this.props.message.message}</span>
         <span className="date">{this.formatDate(this.props.message.date)}</span>
       </div>
