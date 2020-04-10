@@ -8,13 +8,15 @@ import { ConfirmDialogCommon } from '../shared/dialog/ConfirmDialog.common';
 import { SaveChannelDialog } from './dialog/SaveChannelDialog';
 import { AlertType } from '../../const/alert-type.const';
 import { LinkContainer } from 'react-router-bootstrap';
-import { ChatService } from '../../service/chat/chat.service';
+import { ChatStateService } from '../../service/chat/chat-state.service';
 import { GlobalInfoService } from '../../service/util/global-info.service';
-import { WebSocketService } from '../../service/chat/websocket.service';
+import { ChatService } from '../../service/chat/chat.service';
 import { ChatStateModel } from '../../model/chat/chat-state.model';
 import { Subscription } from 'rxjs';
 import { HasRoleUser } from '../shared/security/HasRoleUser';
 import { TransitionGroup, CSSTransition } from 'react-transition-group';
+import Badge from 'react-bootstrap/Badge';
+import { myDi } from '../../util/my-di';
 
 interface Props {}
 
@@ -29,25 +31,25 @@ interface State {
 
 export class ChannelsCard extends React.Component<Props, State> {
   private globalInfoService: GlobalInfoService;
+  private chatStateService: ChatStateService;
   private chatService: ChatService;
-  private webSocketService: WebSocketService;
 
   private chatStateSubscription: Subscription;
 
   constructor(props: Props) {
     super(props);
 
-    this.globalInfoService = GlobalInfoService.get();
-    this.chatService = ChatService.get();
-    this.webSocketService = WebSocketService.get();
+    this.globalInfoService = myDi.get(GlobalInfoService);
+    this.chatStateService = myDi.get(ChatStateService);
+    this.chatService = myDi.get(ChatService);
 
     this.state = {
-      chatState: this.webSocketService.getChatState(),
+      chatState: this.chatService.getChatState(),
       settings: false,
       editChannels: [],
       currentChannel: null,
       showSaveDialog: false,
-      showDeleteDialog: false
+      showDeleteDialog: false,
     };
 
     this.handleClickSettings = this.handleClickSettings.bind(this);
@@ -60,14 +62,14 @@ export class ChannelsCard extends React.Component<Props, State> {
   }
 
   componentDidMount() {
-    this.chatStateSubscription = this.webSocketService.getChatStateObservable().subscribe(chatState => {
+    this.chatStateSubscription = this.chatService.getChatStateObservable().subscribe((chatState) => {
       if (!chatState) {
         return;
       }
 
       this.setState({
         chatState: chatState,
-        editChannels: [...chatState.channels]
+        editChannels: [...chatState.channels],
       });
     });
   }
@@ -84,12 +86,12 @@ export class ChannelsCard extends React.Component<Props, State> {
     }
     if (this.state.settings) {
       this.setState({
-        settings: false
+        settings: false,
       });
     } else {
       this.setState({
         settings: true,
-        editChannels: [...this.state.chatState.channels]
+        editChannels: [...this.state.chatState.channels],
       });
     }
   }
@@ -97,34 +99,34 @@ export class ChannelsCard extends React.Component<Props, State> {
   handleClickEdit(channel: ChannelModel) {
     this.setState({
       showSaveDialog: true,
-      currentChannel: { ...channel }
+      currentChannel: { ...channel },
     });
   }
 
   handleClickCreate() {
     this.setState({
       showSaveDialog: true,
-      currentChannel: new ChannelModel()
+      currentChannel: new ChannelModel(),
     });
   }
 
   handleCancelSave() {
     this.setState({
-      showSaveDialog: false
+      showSaveDialog: false,
     });
   }
 
   handleConfirmSave(channel: ChannelModel) {
     this.setState({
-      showSaveDialog: false
+      showSaveDialog: false,
     });
 
     if (this.state.currentChannel?.id) {
-      this.chatService.updateChannel(channel).then(() => {
+      this.chatStateService.updateChannel(channel).then(() => {
         this.globalInfoService.showAlert(AlertType.SUCCESS, 'Channel "' + channel.id + '" updated');
       });
     } else {
-      this.chatService.createChannel(channel).then(() => {
+      this.chatStateService.createChannel(channel).then(() => {
         this.globalInfoService.showAlert(AlertType.SUCCESS, 'Channel "' + channel.id + '" created');
       });
     }
@@ -133,16 +135,16 @@ export class ChannelsCard extends React.Component<Props, State> {
   handleClickDelete(channel: ChannelModel) {
     this.setState({
       showDeleteDialog: true,
-      currentChannel: { ...channel }
+      currentChannel: { ...channel },
     });
   }
 
   handleConfirmDelete(confirm: boolean) {
     this.setState({
-      showDeleteDialog: false
+      showDeleteDialog: false,
     });
     if (confirm && this.state.currentChannel) {
-      this.chatService.deleteChannel(this.state.currentChannel.id).then(() => {
+      this.chatStateService.deleteChannel(this.state.currentChannel.id).then(() => {
         this.globalInfoService.showAlert(AlertType.SUCCESS, 'Channel "' + this.state.currentChannel?.id + '" deleted');
       });
     }
@@ -172,7 +174,7 @@ export class ChannelsCard extends React.Component<Props, State> {
               <ListGroup variant="flush">
                 {this.state.settings ? (
                   <TransitionGroup>
-                    {this.state.editChannels.map(channel => (
+                    {this.state.editChannels.map((channel) => (
                       <CSSTransition key={channel.id} timeout={300} classNames="transitionFade">
                         <ListGroup.Item title={channel.id} className="smallItem">
                           {channel.name}
@@ -198,11 +200,22 @@ export class ChannelsCard extends React.Component<Props, State> {
                   </TransitionGroup>
                 ) : (
                   <TransitionGroup>
-                    {chatState.channels.map(channel => (
+                    {chatState.channels.map((channel) => (
                       <CSSTransition key={channel.id} timeout={300} classNames="transitionFade">
                         <LinkContainer to={'/c/' + channel.id}>
                           <ListGroup.Item action className="smallItem">
-                            {channel.name}
+                            {channel.subscribed ? (
+                              <>
+                                <strong>{channel.name}</strong>
+                                {channel.unreadMessages ? (
+                                  <Badge className="badgeUnread" pill variant="warning">
+                                    {channel.unreadMessages}
+                                  </Badge>
+                                ) : null}
+                              </>
+                            ) : (
+                              channel.name
+                            )}
                           </ListGroup.Item>
                         </LinkContainer>
                       </CSSTransition>

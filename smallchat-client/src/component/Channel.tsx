@@ -9,10 +9,11 @@ import { match } from 'react-router-dom';
 import { ChannelsCard } from './channel/ChannelsCard';
 import { ChatStateModel } from '../model/chat/chat-state.model';
 import { UserModel } from '../model/global/user.model';
-import { WebSocketService } from '../service/chat/websocket.service';
+import { ChatService } from '../service/chat/chat.service';
 import { AuthenticationService } from '../service/auth/authentication.service';
 import { Subscription } from 'rxjs';
 import { ChannelPanel } from './channel/ChannelPanel';
+import { myDi } from '../util/my-di';
 
 interface Props {
   match: match<{ channelId: '' }>; // For Routing
@@ -24,7 +25,7 @@ interface State {
 }
 
 export class Channel extends React.Component<Props, State> {
-  private webSocketService: WebSocketService;
+  private chatService: ChatService;
   private authenticationService: AuthenticationService;
 
   private chatStateSubscription: Subscription;
@@ -33,21 +34,21 @@ export class Channel extends React.Component<Props, State> {
   constructor(props: Props) {
     super(props);
 
-    this.webSocketService = WebSocketService.get();
-    this.authenticationService = AuthenticationService.get();
+    this.chatService = myDi.get(ChatService);
+    this.authenticationService = myDi.get(AuthenticationService);
 
     this.state = {
-      chatState: this.webSocketService.getChatState(),
+      chatState: this.chatService.getChatState(),
       currentUser: this.authenticationService.getCurrentUser(),
-      selectedChannelId: this.props.match?.params?.channelId
+      selectedChannelId: this.props.match?.params?.channelId,
     };
   }
 
   componentDidMount() {
-    this.chatStateSubscription = this.webSocketService.getChatStateObservable().subscribe(chatState => {
+    this.chatStateSubscription = this.chatService.getChatStateObservable().subscribe((chatState) => {
       this.setState({ chatState: chatState });
     });
-    this.currentUserSubscription = this.authenticationService.getCurrentUserObservable().subscribe(currentUser => {
+    this.currentUserSubscription = this.authenticationService.getCurrentUserObservable().subscribe((currentUser) => {
       this.setState({ currentUser: currentUser });
     });
   }
@@ -64,7 +65,7 @@ export class Channel extends React.Component<Props, State> {
   componentDidUpdate(prevProps: Props) {
     if (this.props.match?.params['channelId'] !== prevProps.match?.params['channelId']) {
       this.setState({
-        selectedChannelId: this.props.match?.params['channelId']
+        selectedChannelId: this.props.match?.params['channelId'],
       });
     }
   }
@@ -82,7 +83,7 @@ export class Channel extends React.Component<Props, State> {
             <Card.Body>
               {chatState ? (
                 <ListGroup variant="flush" className="smallItem">
-                  {chatState.users.map(user => (
+                  {chatState.users.map((user) => (
                     <ListGroup.Item key={user.id} title={user.id}>
                       {user.pseudo}
                     </ListGroup.Item>

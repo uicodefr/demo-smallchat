@@ -7,8 +7,9 @@ import { Login } from './component/Login';
 import { Menu } from './component/Menu';
 import { AuthenticationService } from './service/auth/authentication.service';
 import Spinner from 'react-bootstrap/Spinner';
-import { WebSocketService } from './service/chat/websocket.service';
+import { ChatService } from './service/chat/chat.service';
 import PrivateRoute from './component/shared/security/PrivateRoute';
+import { myDi } from './util/my-di';
 
 interface Props {}
 interface State {
@@ -17,25 +18,25 @@ interface State {
 
 export class App extends React.Component<Props, State> {
   private authenticationService: AuthenticationService;
-  private webSocketService: WebSocketService;
+  private chatService: ChatService;
 
   constructor(props: Props) {
     super(props);
 
-    this.authenticationService = AuthenticationService.get();
-    this.webSocketService = WebSocketService.get();
+    this.authenticationService = myDi.get(AuthenticationService);
+    this.chatService = myDi.get(ChatService);
 
     this.state = {
-      init: false
+      init: false,
     };
   }
 
   componentDidMount() {
     this.authenticationService.loadUser().finally(() => {
       this.setState({
-        init: true
+        init: true,
       });
-      this.webSocketService.connectWebSocket();
+      this.chatService.connectWebSocket();
     });
   }
 

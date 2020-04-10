@@ -1,8 +1,8 @@
 import { ChatUserModel } from './chat-user.model';
-import { ChannelModel } from './channel.model';
+import { ChannelStateModel } from './channel-state.model';
 
 export class ChatStateModel {
-  channels: Array<ChannelModel>;
+  channels: Array<ChannelStateModel>;
   users: Array<ChatUserModel>;
   updateDate: Date;
 }

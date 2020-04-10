@@ -1,17 +1,13 @@
 import { CountLikesModel } from '../../model/global/count-likes.model';
 import { UrlConstant } from '../../const/url-constant';
 import { RestClientService } from '../util/rest-client.service';
+import { myDi } from '../../util/my-di';
 
 export class GlobalService {
-  private static readonly INSTANCE = new GlobalService();
-
   private restClientService: RestClientService;
 
-  private constructor() {
-    this.restClientService = RestClientService.get();
-  }
-  public static get(): GlobalService {
-    return this.INSTANCE;
+  public constructor() {
+    this.restClientService = myDi.get(RestClientService);
   }
 
   public countLike(): Promise<CountLikesModel> {

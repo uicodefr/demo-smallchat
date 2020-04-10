@@ -184,9 +184,9 @@ public class ConsumerDelegateImpl implements ConsumerDelegate {
                 resultList.add(consumerRecord.value().mapTo(type));
 
                 TopicPartition recordPartition = new TopicPartition(consumerRecord.topic(), consumerRecord.partition());
-                Long offsetPosition  = consumerRecord.offset();
+                long offsetPosition  = consumerRecord.offset();
                 Long endPosition = endPositionForTopics.get(recordPartition);
-                if (endPosition <= offsetPosition + 1) {
+                if (endPosition != null && endPosition.longValue() <= offsetPosition + 1) {
                     endPositionForTopics.remove(recordPartition);
                 }
 

@@ -2,6 +2,7 @@ import React from 'react';
 import { UserModel } from '../../../model/global/user.model';
 import { AuthenticationService } from '../../../service/auth/authentication.service';
 import { Subscription } from 'rxjs';
+import { myDi } from '../../../util/my-di';
 
 interface Props {
   userRole: string;
@@ -14,7 +15,7 @@ interface State {
 export class HasRoleUser extends React.Component<Props, State> {
   static defaultProps = {
     userRole: 'USER',
-    not: false
+    not: false,
   };
 
   private authenticationService: AuthenticationService;
@@ -24,15 +25,15 @@ export class HasRoleUser extends React.Component<Props, State> {
   constructor(props: Props) {
     super(props);
 
-    this.authenticationService = AuthenticationService.get();
+    this.authenticationService = myDi.get(AuthenticationService);
 
     this.state = {
-      currentUser: this.authenticationService.getCurrentUser()
+      currentUser: this.authenticationService.getCurrentUser(),
     };
   }
 
   componentDidMount() {
-    this.currentUserSubscription = this.authenticationService.getCurrentUserObservable().subscribe(currentUser => {
+    this.currentUserSubscription = this.authenticationService.getCurrentUserObservable().subscribe((currentUser) => {
       this.setState({ currentUser: currentUser });
     });
   }

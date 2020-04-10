@@ -2,7 +2,7 @@ import React from 'react';
 import Jumbotron from 'react-bootstrap/Jumbotron';
 import './ChannelPanel.scss';
 import Spinner from 'react-bootstrap/Spinner';
-import { WebSocketService } from '../../service/chat/websocket.service';
+import { ChatService } from '../../service/chat/chat.service';
 import { ChannelFullModel } from '../../model/channel/channel-full.model';
 import Button from 'react-bootstrap/Button';
 import { Formik, FormikValues } from 'formik';
@@ -10,6 +10,7 @@ import Form from 'react-bootstrap/Form';
 import { Subscription } from 'rxjs';
 import { ChatMessage } from './message/ChatMessage';
 import { Redirect } from 'react-router-dom';
+import { myDi } from '../../util/my-di';
 
 interface Props {
   channelId: string;
@@ -21,7 +22,7 @@ interface State {
 }
 
 export class ChannelPanel extends React.Component<Props, State> {
-  private webSocketService: WebSocketService;
+  private chatService: ChatService;
   private channelSubscription: Subscription;
 
   private channelShowBottomRef = React.createRef<HTMLDivElement>();
@@ -29,14 +30,15 @@ export class ChannelPanel extends React.Component<Props, State> {
   constructor(props: Props) {
     super(props);
 
-    this.webSocketService = WebSocketService.get();
+    this.chatService = myDi.get(ChatService);
 
     this.state = {
       loading: true,
       channel: null,
-      redirectAfterDisconnect: false
+      redirectAfterDisconnect: false,
     };
 
+    this.cleanUnreadMessages = this.cleanUnreadMessages.bind(this);
     this.handleSendSubmit = this.handleSendSubmit.bind(this);
     this.handleDisconnect = this.handleDisconnect.bind(this);
   }
@@ -72,28 +74,33 @@ export class ChannelPanel extends React.Component<Props, State> {
 
     const channelId = this.props.channelId;
     this.setState({
-      loading: true
+      loading: true,
     });
 
     if (this.channelSubscription) {
       this.channelSubscription.unsubscribe();
     }
 
-    this.channelSubscription = this.webSocketService.getChannelObservable(channelId).subscribe(
-      channel => {
+    this.channelSubscription = this.chatService.getChannelObservable(channelId).subscribe(
+      (channel) => {
         this.setState({
           loading: false,
-          channel: channel
+          channel: channel,
         });
       },
-      error => {
+      (error) => {
         this.setState({
           loading: false,
-          channel: null
+          channel: null,
         });
       }
     );
-    this.webSocketService.connectToChannel(channelId);
+
+    this.chatService.connectToChannel(channelId);
+  }
+
+  public cleanUnreadMessages() {
+    this.chatService.cleanUnreadMessages(this.props.channelId);
   }
 
   public handleSendSubmit(
@@ -105,7 +112,8 @@ export class ChannelPanel extends React.Component<Props, State> {
       return;
     }
 
-    this.webSocketService.sendMessage(this.state.channel.id, message);
+    this.chatService.sendMessage(this.state.channel.id, message);
+    this.cleanUnreadMessages();
     options.setFieldValue('messageTxt', '');
   }
 
@@ -114,7 +122,7 @@ export class ChannelPanel extends React.Component<Props, State> {
       this.setState({ redirectAfterDisconnect: true });
       return;
     }
-    this.webSocketService.disconnectToChannel(this.props.channelId).then(() => {
+    this.chatService.disconnectToChannel(this.props.channelId).then(() => {
       this.setState({ redirectAfterDisconnect: true });
     });
   }
@@ -138,7 +146,7 @@ export class ChannelPanel extends React.Component<Props, State> {
           <>
             <div className="channelHeader">
               <span className="channelDisconnect">
-                <Button variant="warning" size="sm" title="Leave channel" onClick={this.handleDisconnect}>
+                <Button variant="secondary" size="sm" title="Leave channel" onClick={this.handleDisconnect}>
                   Leave
                 </Button>
               </span>
@@ -147,7 +155,7 @@ export class ChannelPanel extends React.Component<Props, State> {
             </div>
 
             <div className="channelShow">
-              {this.state.channel.messages.map(message => (
+              {this.state.channel.messages.map((message) => (
                 <ChatMessage key={message.id} message={message} />
               ))}
               <div ref={this.channelShowBottomRef}></div>
@@ -168,6 +176,7 @@ export class ChannelPanel extends React.Component<Props, State> {
                           onBlur={handleBlur}
                           isInvalid={!!errors.messageTxt}
                           disabled={disabledForm}
+                          onClick={this.cleanUnreadMessages}
                         />
                       </Form.Group>
                     </div>

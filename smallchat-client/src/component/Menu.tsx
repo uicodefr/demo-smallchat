@@ -8,6 +8,7 @@ import { GlobalInfo } from './menu/GlobalInfo';
 import { GlobalService } from '../service/global/global.service';
 import { AuthenticationService } from '../service/auth/authentication.service';
 import { HasRoleUser } from './shared/security/HasRoleUser';
+import { myDi } from '../util/my-di';
 
 interface Props {}
 interface State {
@@ -21,11 +22,11 @@ export class Menu extends React.Component<Props, State> {
   constructor(props: Props) {
     super(props);
     this.state = {
-      likes: 0
+      likes: 0,
     };
 
-    this.globalService = GlobalService.get();
-    this.authenticationService = AuthenticationService.get();
+    this.globalService = myDi.get(GlobalService);
+    this.authenticationService = myDi.get(AuthenticationService);
 
     this.handleClickLike = this.handleClickLike.bind(this);
     this.handleClickLogout = this.handleClickLogout.bind(this);
@@ -36,9 +37,9 @@ export class Menu extends React.Component<Props, State> {
   }
 
   loadLikes() {
-    this.globalService.countLike().then(likesCount => {
+    this.globalService.countLike().then((likesCount) => {
       this.setState({
-        likes: likesCount.count
+        likes: likesCount.count,
       });
     });
   }

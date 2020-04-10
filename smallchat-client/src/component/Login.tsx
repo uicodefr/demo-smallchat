@@ -12,6 +12,7 @@ import { AuthenticationService } from '../service/auth/authentication.service';
 import { GlobalInfoService } from '../service/util/global-info.service';
 import { UserModel } from '../model/global/user.model';
 import { Subscription } from 'rxjs';
+import { myDi } from '../util/my-di';
 
 interface Props {}
 
@@ -30,13 +31,13 @@ export class Login extends React.Component<Props, State> {
   constructor(props: Props) {
     super(props);
 
-    this.authenticationService = AuthenticationService.get();
-    this.globalInfoService = GlobalInfoService.get();
+    this.authenticationService = myDi.get(AuthenticationService);
+    this.globalInfoService = myDi.get(GlobalInfoService);
 
     this.state = {
       currentUser: this.authenticationService.getCurrentUser(),
       loginInProgress: false,
-      redirectAfterLogin: false
+      redirectAfterLogin: false,
     };
 
     this.handleSubmit = this.handleSubmit.bind(this);
@@ -45,10 +46,10 @@ export class Login extends React.Component<Props, State> {
 
   componentDidMount() {
     this.setState({
-      redirectAfterLogin: false
+      redirectAfterLogin: false,
     });
 
-    this.currentUserSubscription = this.authenticationService.getCurrentUserObservable().subscribe(currentUser => {
+    this.currentUserSubscription = this.authenticationService.getCurrentUserObservable().subscribe((currentUser) => {
       this.setState({ currentUser: currentUser });
     });
   }
@@ -61,19 +62,19 @@ export class Login extends React.Component<Props, State> {
 
   handleSubmit(formValues: FormikValues) {
     this.setState({
-      loginInProgress: true
+      loginInProgress: true,
     });
 
     const username = formValues.username;
     const password = formValues.password;
-    this.authenticationService.login(username, password).then(user => {
+    this.authenticationService.login(username, password).then((user) => {
       this.setState({
-        loginInProgress: false
+        loginInProgress: false,
       });
 
       if (user) {
         this.setState({
-          redirectAfterLogin: true
+          redirectAfterLogin: true,
         });
       } else {
         this.globalInfoService.showAlert(AlertType.WARNING, 'Sign-in Failed : Incorrect username or password');
@@ -91,11 +92,8 @@ export class Login extends React.Component<Props, State> {
     }
 
     const schema = yup.object({
-      username: yup
-        .string()
-        .required()
-        .matches(new RegExp(UserModel.USERNAME_PATTERN)),
-      password: yup.string().required()
+      username: yup.string().required().matches(new RegExp(UserModel.USERNAME_PATTERN)),
+      password: yup.string().required(),
     });
     const initialValues = { username: '', password: '' };
 

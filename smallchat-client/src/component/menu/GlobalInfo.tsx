@@ -7,6 +7,7 @@ import { AlertModel } from '../../model/global/alert.model';
 import { GlobalInfoService } from '../../service/util/global-info.service';
 import { Subscription } from 'rxjs';
 import { TransitionGroup, CSSTransition } from 'react-transition-group';
+import { myDi } from '../../util/my-di';
 
 interface Props {}
 interface State {
@@ -24,25 +25,25 @@ export class GlobalInfo extends React.Component<Props, State> {
     super(props);
     this.state = {
       displayLoader: false,
-      alerts: []
+      alerts: [],
     };
 
-    this.globalInfoService = GlobalInfoService.get();
+    this.globalInfoService = myDi.get(GlobalInfoService);
 
     this.closeAlert = this.closeAlert.bind(this);
   }
 
   componentDidMount() {
-    this.loaderSubscription = this.globalInfoService.getLoaderObservable().subscribe(displayLoader => {
+    this.loaderSubscription = this.globalInfoService.getLoaderObservable().subscribe((displayLoader) => {
       this.setState({
-        displayLoader: displayLoader
+        displayLoader: displayLoader,
       });
     });
 
-    this.alertSubscription = this.globalInfoService.getAlertObservable().subscribe(alert => {
+    this.alertSubscription = this.globalInfoService.getAlertObservable().subscribe((alert) => {
       const newAlerts = [...this.state.alerts, alert];
       this.setState({
-        alerts: newAlerts
+        alerts: newAlerts,
       });
 
       if (alert.duration && alert.duration > 0) {
@@ -68,7 +69,7 @@ export class GlobalInfo extends React.Component<Props, State> {
     if (alertIndex > -1) {
       newAlerts.splice(alertIndex, 1);
       this.setState({
-        alerts: newAlerts
+        alerts: newAlerts,
       });
     }
   }

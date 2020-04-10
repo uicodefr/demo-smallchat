@@ -1,17 +1,13 @@
 import { UrlConstant } from '../../const/url-constant';
 import { RestClientService } from '../util/rest-client.service';
 import { ChannelFullModel } from '../../model/channel/channel-full.model';
+import { myDi } from '../../util/my-di';
 
 export class ChannelService {
-  private static readonly INSTANCE = new ChannelService();
-
   private restClientService: RestClientService;
 
-  private constructor() {
-    this.restClientService = RestClientService.get();
-  }
-  public static get(): ChannelService {
-    return this.INSTANCE;
+  public constructor() {
+    this.restClientService = myDi.get(RestClientService);
   }
 
   public getChannel(channelId: string): Promise<ChannelFullModel> {

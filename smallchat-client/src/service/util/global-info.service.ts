@@ -4,15 +4,8 @@ import { AlertModel } from '../../model/global/alert.model';
 import { Observable, Subject } from 'rxjs';
 
 export class GlobalInfoService {
-  private static readonly INSTANCE = new GlobalInfoService();
-
   private loaderSubject = new Subject<boolean>();
   private alertSubject = new Subject<AlertModel>();
-
-  private constructor() {}
-  public static get(): GlobalInfoService {
-    return this.INSTANCE;
-  }
 
   public getLoaderObservable(): Observable<boolean> {
     return this.loaderSubject.asObservable();
@@ -34,7 +27,7 @@ export class GlobalInfoService {
     const alert = {
       alertType: alertType,
       message: message,
-      duration: duration
+      duration: duration,
     } as AlertModel;
 
     this.alertSubject.next(alert);
