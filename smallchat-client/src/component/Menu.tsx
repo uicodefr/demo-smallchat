@@ -25,8 +25,8 @@ export class Menu extends React.Component<Props, State> {
       likes: 0,
     };
 
-    this.globalService = myDi.get(GlobalService);
-    this.authenticationService = myDi.get(AuthenticationService);
+    this.globalService = myDi.get('GlobalService');
+    this.authenticationService = myDi.get('AuthenticationService');
 
     this.handleClickLike = this.handleClickLike.bind(this);
     this.handleClickLogout = this.handleClickLogout.bind(this);

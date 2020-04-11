@@ -22,14 +22,14 @@ import io.vertx.ext.auth.jwt.JWTAuthOptions;
 import io.vertx.ext.jwt.JWTOptions;
 
 public class UserServiceImpl implements UserService {
-    
+
     private static final Logger LOGGER = LogManager.getLogger(UserServiceImpl.class);
 
     // XXX Just for the demo
     private static final String PASSWORD_POC = "password";
     private static final String USER_ROLE = "USER";
 
-    private static final JWTOptions JWT_OPTIONS = new JWTOptions().setAlgorithm("ES256").setExpiresInMinutes(60*12);
+    private static final JWTOptions JWT_OPTIONS = new JWTOptions().setAlgorithm("ES256").setExpiresInMinutes(60 * 12);
 
     private final Vertx vertx;
     private JWTAuth oneJwtProvider;

@@ -39,9 +39,9 @@ export class ChannelsCard extends React.Component<Props, State> {
   constructor(props: Props) {
     super(props);
 
-    this.globalInfoService = myDi.get(GlobalInfoService);
-    this.chatStateService = myDi.get(ChatStateService);
-    this.chatService = myDi.get(ChatService);
+    this.globalInfoService = myDi.get('GlobalInfoService');
+    this.chatStateService = myDi.get('ChatStateService');
+    this.chatService = myDi.get('ChatService');
 
     this.state = {
       chatState: this.chatService.getChatState(),

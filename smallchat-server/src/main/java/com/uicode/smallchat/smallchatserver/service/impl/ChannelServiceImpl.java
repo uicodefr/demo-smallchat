@@ -22,7 +22,6 @@ import com.uicode.smallchat.smallchatserver.service.ChatStateService;
 import com.uicode.smallchat.smallchatserver.util.GeneralConst;
 import com.uicode.smallchat.smallchatserver.websocket.WebSocketMediator;
 
-import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 
@@ -40,12 +39,8 @@ public class ChannelServiceImpl implements ChannelService {
     private final ChatStateService chatStateService;
 
     @Inject
-    public ChannelServiceImpl(
-        ProducerDelegate producerDelegate,
-        ConsumerDelegate consumerDelegate,
-        WebSocketMediator webSocketMediator,
-        ChatStateService chatStateService
-    ) {
+    public ChannelServiceImpl(ProducerDelegate producerDelegate, ConsumerDelegate consumerDelegate,
+            WebSocketMediator webSocketMediator, ChatStateService chatStateService) {
         this.producerDelegate = producerDelegate;
         this.consumerDelegate = consumerDelegate;
         this.webSocketMediator = webSocketMediator;
@@ -76,13 +71,20 @@ public class ChannelServiceImpl implements ChannelService {
         LOGGER.info("User {} connect to {}", userId, channelId);
         String connectionMessage = String.format(CONNECTION_MESSAGE, userId);
 
-        consumerDelegate.refreshSubscribe(ChannelNotice.TOPIC + ".*");
-        webSocketMediator.connectUserForSubscription(userId, getSubscriptionId(channelId), true);
+        // 1. Get Channel (error if it doesn't exist)
         getChannel(channelId).future()
             .compose(channel ->
-                sendServerMessage(channelId, connectionMessage, MessageCode.CONNECT).future().map(channel)
-            )
-            .onComplete(promise::handle);
+                // 2. Refresh subscribe topic
+                consumerDelegate.refreshSubscribe(ChannelNotice.TOPIC + ".*").future().map(channel))
+            .compose(channel ->
+                // 3. Send connect message
+                sendServerMessage(channelId, connectionMessage, MessageCode.CONNECT).future().map(channel))
+            .compose(channel -> {
+                // 4. Connect the webSocket and get last channel messages
+                webSocketMediator.connectUserForSubscription(userId, getSubscriptionId(channelId), true);
+                return getChannelMessages(channelId).future()
+                    .map(channelMessages -> new ChannelFull(channel, channelMessages));
+            }).onComplete(promise::handle);
 
         return promise;
     }
@@ -111,40 +113,54 @@ public class ChannelServiceImpl implements ChannelService {
             LOGGER.debug("Disconnect subscription do nothing for subscription {}", subscriptionId);
             promise.complete();
             return promise;
-        } 
+        }
 
         LOGGER.info("Disconnect subscription {} for user {}", subscriptionId, userId);
         String channelId = subscriptionId.replace(GeneralConst.SUBSCRIPTION_CHANNEL_PREFIX, "");
         sendServerMessage(channelId, String.format(DISCONNECTION_MESSAGE, userId), MessageCode.DISCONNECT).future()
-        .<Void>mapEmpty().onComplete(promise::handle);
+            .<Void>mapEmpty()
+            .onComplete(promise::handle);
+
+        return promise;
+    }
+
+    private Promise<Channel> getChannel(String channelId) {
+        Promise<Channel> promise = Promise.promise();
+
+        chatStateService.getChatStateInternal().future().onFailure(promise::fail).onSuccess(chatStateInternal -> {
+            Channel channel = chatStateInternal.getChannels().get(channelId);
+            if (channel == null) {
+                promise.fail(new NotFoundException(String.format("Channel not found for id : %s", channelId)));
+            } else {
+                promise.complete(channel);
+            }
+        });
+
+        return promise;
+    }
+
+    private Promise<List<ChannelMessage>> getChannelMessages(String channelId) {
+        Promise<List<ChannelMessage>> promise = Promise.promise();
+
+        String topic = ChannelNotice.getTopicForChannelId(channelId);
+        consumerDelegate.getLastMessages(topic, GeneralConst.CHANNEL_MESSAGES_TO_SEND, ChannelNotice.class)
+            .future()
+            .map(channelNoticeList -> channelNoticeList.stream()
+                .map(ChannelNotice::getChannelMessage)
+                .collect(Collectors.toList()))
+            .onComplete(promise::handle);
 
         return promise;
     }
 
     @Override
-    public Promise<ChannelFull> getChannel(String channelId) {
+    public Promise<ChannelFull> getChannelFull(String channelId) {
         Promise<ChannelFull> promise = Promise.promise();
 
-        Future<Channel> channelFuture = chatStateService.getChatStateInternal().future()
-            .map(chatStateInternal -> chatStateInternal.getChannels().get(channelId));
-
-        String topic = ChannelNotice.getTopicForChannelId(channelId);
-        Future<List<ChannelMessage>> messagesFuture = consumerDelegate
-            .getLastMessages(topic, GeneralConst.CHANNEL_MESSAGES_TO_SEND, ChannelNotice.class).future()
-            .map(channelNoticeList -> channelNoticeList.stream().map(ChannelNotice::getChannelMessage)
-                    .collect(Collectors.toList()));
-
-        CompositeFuture.all(channelFuture, messagesFuture)
-            .onFailure(promise::fail)
-            .onSuccess(compositeResult -> {
-                if (channelFuture.result() == null) {
-                    promise.fail(new NotFoundException(String.format("Channel not found for id : %s", channelId)));
-                    return;
-                }
-    
-                ChannelFull channelFull = new ChannelFull(channelFuture.result(), messagesFuture.result());
-                promise.complete(channelFull);
-            });
+        getChannel(channelId).future()
+            .compose(channel -> getChannelMessages(channelId).future()
+                .map(channelMessages -> new ChannelFull(channel, channelMessages)))
+            .onComplete(promise::handle);
 
         return promise;
     }
@@ -175,7 +191,8 @@ public class ChannelServiceImpl implements ChannelService {
         channelNotice.setChannelMessage(channelMessage);
 
         LOGGER.info("Send message '{}' on the channel '{}' by '{}' (code: {})", messageId, channelId, userId, code);
-        producerDelegate.publish(channelNotice).future()
+        producerDelegate.publish(channelNotice)
+            .future()
             .onFailure(promise::fail)
             .onSuccess(recordResult -> promise.complete(channelMessage));
         return promise;

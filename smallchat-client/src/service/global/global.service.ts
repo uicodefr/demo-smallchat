@@ -7,7 +7,7 @@ export class GlobalService {
   private restClientService: RestClientService;
 
   public constructor() {
-    this.restClientService = myDi.get(RestClientService);
+    this.restClientService = myDi.get('RestClientService');
   }
 
   public countLike(): Promise<CountLikesModel> {

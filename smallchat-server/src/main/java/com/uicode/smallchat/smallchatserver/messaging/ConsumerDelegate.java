@@ -15,7 +15,7 @@ public interface ConsumerDelegate {
     <T extends AbstractNotice> SubscriptionMsg subscribe(String topic, Class<T> type, Handler<PackageMsgNotice<T>> receiveHandler,
             Handler<AsyncResult<Void>> completionHandler);
 
-    void refreshSubscribe(String topic);
+    Promise<Void> refreshSubscribe(String topic);
 
     <T extends AbstractNotice> Promise<T> poll(String topic, Class<T> type, long timeout);
 

@@ -58,7 +58,8 @@ public class ConsumerDelegateImpl implements ConsumerDelegate {
     }
 
     private void handleConsumer(String topic, KafkaConsumerRecord<String, JsonObject> consumerRecord) {
-        LOGGER.trace("Received new record from topic : {}", consumerRecord.topic());
+        LOGGER.trace("Received new record from topic {} (offset {}, partition {})", consumerRecord.topic(),
+                consumerRecord.offset(), consumerRecord.partition());
         vertx.eventBus().publish(PREFIX_EVENT_BUS + topic, consumerRecord.value());
     }
 
@@ -87,13 +88,18 @@ public class ConsumerDelegateImpl implements ConsumerDelegate {
     }
 
     @Override
-    public void refreshSubscribe(String topic) {
+    public Promise<Void> refreshSubscribe(String topic) {
+        Promise<Void> promise = Promise.promise();
+
         KafkaConsumer<String, JsonObject> consumerForTopic = this.getConsumer(topic);
         consumerForTopic.subscribe(Pattern.compile(topic), subscribeResult -> {
             if (subscribeResult.failed()) {
                 LOGGER.error("Error when refresh subscribing", subscribeResult.cause());
             }
+            promise.handle(subscribeResult);
         });
+
+        return promise;
     }
 
     @Override
@@ -126,15 +132,14 @@ public class ConsumerDelegateImpl implements ConsumerDelegate {
         Promise<Void> promise = Promise.promise();
         KafkaConsumer<String, JsonObject> consumerForTopic = this.getConsumer(topic);
 
-        changePosition(consumerForTopic, topic, messageToResend).future()
-            .<Void>mapEmpty().onComplete(result -> {
-                if (result.failed()) {
-                    LOGGER.error("Resend Last Message Failed", result.cause());
-                    promise.fail(result.cause());
-                    return;
-                }
-                promise.complete();
-            });
+        changePosition(consumerForTopic, topic, messageToResend).future().<Void>mapEmpty().onComplete(result -> {
+            if (result.failed()) {
+                LOGGER.error("Resend Last Message Failed", result.cause());
+                promise.fail(result.cause());
+                return;
+            }
+            promise.complete();
+        });
 
         return promise;
     }
@@ -148,29 +153,27 @@ public class ConsumerDelegateImpl implements ConsumerDelegate {
         Map<String, String> kafkaConfig = new HashMap<>(ConfigUtil.getConfig().getKafkaConsumer());
         kafkaConfig.put("group.id", anonymousGroupId);
         KafkaConsumer<String, JsonObject> anonymousConsumer = KafkaConsumer.create(vertx, kafkaConfig);
-        anonymousConsumer.exceptionHandler(error ->
-            LOGGER.error("Error with anonymousConsumer on getLastMessages", error)
-        );
-        
+        anonymousConsumer
+            .exceptionHandler(error -> LOGGER.error("Error with anonymousConsumer on getLastMessages", error));
+
         List<T> resultList = new ArrayList<>();
-        
+
         Future.<Void>future(subscribePromise ->
-            // 1. Subscribe
-            anonymousConsumer.subscribe(topic, subscribePromise::handle)
+        // 1. Subscribe
+        anonymousConsumer.subscribe(topic, subscribePromise::handle)
 
         ).compose(subscribeDone ->
-            // 2. Change the position
-            Future.<Map<TopicPartition,Long>>future(changePositionPromise ->
-                changePosition(anonymousConsumer, topic, messagesToGet).future().onComplete(changePositionPromise)
-            )
+        // 2. Change the position
+        Future.<Map<TopicPartition, Long>>future(
+                changePositionPromise -> changePosition(anonymousConsumer, topic, messagesToGet).future()
+                    .onComplete(changePositionPromise))
 
         ).compose(changePositionResult ->
-            // 3. Check current position with the end position
-            // To Remove Empty TopicPartition
-            checkChangePositionResult(anonymousConsumer, changePositionResult).future()
+        // 3. Check current position with the end position
+        // To Remove Empty TopicPartition
+        checkChangePositionResult(anonymousConsumer, changePositionResult).future()
 
-        ).onFailure(resultPromise::fail)
-        .onSuccess(checkPositionResult -> {
+        ).onFailure(resultPromise::fail).onSuccess(checkPositionResult -> {
             if (checkPositionResult.isEmpty()) {
                 resultPromise.complete(resultList);
                 return;
@@ -184,7 +187,7 @@ public class ConsumerDelegateImpl implements ConsumerDelegate {
                 resultList.add(consumerRecord.value().mapTo(type));
 
                 TopicPartition recordPartition = new TopicPartition(consumerRecord.topic(), consumerRecord.partition());
-                long offsetPosition  = consumerRecord.offset();
+                long offsetPosition = consumerRecord.offset();
                 Long endPosition = endPositionForTopics.get(recordPartition);
                 if (endPosition != null && endPosition.longValue() <= offsetPosition + 1) {
                     endPositionForTopics.remove(recordPartition);
@@ -198,42 +201,37 @@ public class ConsumerDelegateImpl implements ConsumerDelegate {
         });
 
         resultPromise.future().onComplete(result ->
-            // Close Consumer finally (on success or on error)
-            anonymousConsumer.close()
-        );
+        // Close Consumer finally (on success or on error)
+        anonymousConsumer.close());
 
         return resultPromise;
     }
 
-    private static Promise<Map<TopicPartition, Long>> changePosition(KafkaConsumer<String, JsonObject> consumer, String topic, int messagesToRewind) {
+    private static Promise<Map<TopicPartition, Long>> changePosition(KafkaConsumer<String, JsonObject> consumer,
+            String topic, int messagesToRewind) {
         Promise<Map<TopicPartition, Long>> promise = Promise.promise();
 
         Future.<KafkaConsumerRecords<String, JsonObject>>future(pollPromise ->
-            // Pool with 0 for establish a connection and load assignment
-            consumer.poll(0, pollPromise::handle)
+        // Pool with 0 for establish a connection and load assignment
+        consumer.poll(0, pollPromise::handle)
 
         ).compose(consumerRecords ->
-            // Get Topic Partitions
-            Future.<Set<TopicPartition>>future(topicsPromise -> consumer.assignment(topicsPromise::handle))
+        // Get Topic Partitions
+        Future.<Set<TopicPartition>>future(topicsPromise -> consumer.assignment(topicsPromise::handle))
 
         ).compose(topicPartitionSet ->
-            // Change topic position and get end position for each TopicPartitions
-            Future.<Map<TopicPartition, Long>>future(changeTopicPromise ->
-                changePositionForPartitions(consumer, changeTopicPromise, topic, messagesToRewind, topicPartitionSet)
-            )
+        // Change topic position and get end position for each TopicPartitions
+        Future.<Map<TopicPartition, Long>>future(changeTopicPromise -> changePositionForPartitions(consumer,
+                changeTopicPromise, topic, messagesToRewind, topicPartitionSet))
 
         ).onComplete(promise::handle);
 
         return promise;
     }
 
-    private static void changePositionForPartitions(
-        KafkaConsumer<String, JsonObject> consumer,
-        Promise<Map<TopicPartition, Long>> finalPromise,
-        String topic,
-        int messagesToRewind,
-        Set<TopicPartition> topicPartitionSet
-    ) {
+    private static void changePositionForPartitions(KafkaConsumer<String, JsonObject> consumer,
+            Promise<Map<TopicPartition, Long>> finalPromise, String topic, int messagesToRewind,
+            Set<TopicPartition> topicPartitionSet) {
         Map<TopicPartition, Long> topicPartitionWithEndPosition = new HashMap<>();
 
         @SuppressWarnings("rawtypes")
@@ -244,20 +242,19 @@ public class ConsumerDelegateImpl implements ConsumerDelegate {
                 continue;
             }
 
-            Future<Void> localFuture = Future.<Long>future(positionPromise -> 
-                // Get End Offets
-                consumer.endOffsets(topicPartition, positionPromise::handle)
+            Future<Void> localFuture = Future.<Long>future(positionPromise ->
+            // Get End Offets
+            consumer.endOffsets(topicPartition, positionPromise::handle)
 
             ).compose(endPosition ->
-                // Change the position for the consumer
-                Future.<Void>future(seekPromise -> {
-                    LOGGER.trace("changePositionForPartitions for topic {} - endPosition : {}", topic, endPosition);
+            // Change the position for the consumer
+            Future.<Void>future(seekPromise -> {
+                LOGGER.trace("changePositionForPartitions for topic {} - endPosition : {}", topic, endPosition);
 
-                    topicPartitionWithEndPosition.put(topicPartition, endPosition);
-                    long newPosition = Math.max(0, endPosition - messagesToRewind);
-                    consumer.seek(topicPartition, newPosition, seekPromise::handle);
-                })
-            );
+                topicPartitionWithEndPosition.put(topicPartition, endPosition);
+                long newPosition = Math.max(0, endPosition - messagesToRewind);
+                consumer.seek(topicPartition, newPosition, seekPromise::handle);
+            }));
 
             compositeFutures.add(localFuture);
         }
@@ -266,16 +263,14 @@ public class ConsumerDelegateImpl implements ConsumerDelegate {
             .onFailure(finalPromise::fail)
             .onSuccess(compositeResult -> finalPromise.complete(topicPartitionWithEndPosition));
     }
-    
-    private Promise<Map<TopicPartition,Long>> checkChangePositionResult(
-            KafkaConsumer<String, JsonObject> consumer,
-            Map<TopicPartition,Long> changePositionResult
-    ) {
-        Promise<Map<TopicPartition,Long>> checkedPositionPromise = Promise.promise();
-        
+
+    private Promise<Map<TopicPartition, Long>> checkChangePositionResult(KafkaConsumer<String, JsonObject> consumer,
+            Map<TopicPartition, Long> changePositionResult) {
+        Promise<Map<TopicPartition, Long>> checkedPositionPromise = Promise.promise();
+
         @SuppressWarnings("rawtypes")
         List<Future> compositeFutures = new ArrayList<>();
-        Map<TopicPartition,Long> checkPositionResult = new HashMap<>(changePositionResult);
+        Map<TopicPartition, Long> checkPositionResult = new HashMap<>(changePositionResult);
 
         for (Entry<TopicPartition, Long> changePositionEntry : changePositionResult.entrySet()) {
             Promise<Void> checkPositionPromise = Promise.promise();
@@ -283,18 +278,18 @@ public class ConsumerDelegateImpl implements ConsumerDelegate {
 
             TopicPartition topicPartition = changePositionEntry.getKey();
             consumer.position(topicPartition, positionResult -> {
-               if (positionResult.failed()) {
-                   checkPositionPromise.fail(positionResult.cause());
-                   return;
-               }
+                if (positionResult.failed()) {
+                    checkPositionPromise.fail(positionResult.cause());
+                    return;
+                }
 
-               // Filter the TopicPartition with a current position equals to endPosition
-               // This check should normally be used to only handle empty topic
-               Long endPosition = changePositionEntry.getValue();
-               if (endPosition <= positionResult.result()) {
-                   checkPositionResult.remove(topicPartition);
-               }
-               checkPositionPromise.complete();
+                // Filter the TopicPartition with a current position equals to endPosition
+                // This check should normally be used to only handle empty topic
+                Long endPosition = changePositionEntry.getValue();
+                if (endPosition <= positionResult.result()) {
+                    checkPositionResult.remove(topicPartition);
+                }
+                checkPositionPromise.complete();
             });
         }
 

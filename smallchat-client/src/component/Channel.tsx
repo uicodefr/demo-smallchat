@@ -16,7 +16,7 @@ import { ChannelPanel } from './channel/ChannelPanel';
 import { myDi } from '../util/my-di';
 
 interface Props {
-  match: match<{ channelId: '' }>; // For Routing
+  match: match<{ channelId: string }>; // For Routing
 }
 interface State {
   chatState: ChatStateModel | null;
@@ -34,8 +34,8 @@ export class Channel extends React.Component<Props, State> {
   constructor(props: Props) {
     super(props);
 
-    this.chatService = myDi.get(ChatService);
-    this.authenticationService = myDi.get(AuthenticationService);
+    this.chatService = myDi.get('ChatService');
+    this.authenticationService = myDi.get('AuthenticationService');
 
     this.state = {
       chatState: this.chatService.getChatState(),
@@ -103,7 +103,7 @@ export class Channel extends React.Component<Props, State> {
             <Jumbotron className="helloPanel">
               <h1>Welcome !</h1>
               {this.state.currentUser ? (
-                <p>Select a channel or a user to the right to begin chatting with others.</p>
+                <p>Select a channel to the right to begin chatting with others.</p>
               ) : (
                 <>
                   <p>Before sending messages to channels or to users, sign in.</p>

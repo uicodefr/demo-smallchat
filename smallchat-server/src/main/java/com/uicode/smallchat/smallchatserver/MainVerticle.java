@@ -7,6 +7,7 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.uicode.smallchat.smallchatserver.dao.InitDatabaseDao;
 import com.uicode.smallchat.smallchatserver.router.MainRouter;
+import com.uicode.smallchat.smallchatserver.service.ChatStateService;
 import com.uicode.smallchat.smallchatserver.util.ConfigUtil;
 import com.uicode.smallchat.smallchatserver.websocket.WebSocketServer;
 
@@ -35,11 +36,14 @@ public class MainVerticle extends AbstractVerticle {
 
         LOGGER.info("Application starting");
 
-        ConfigUtil.initConfig(vertx).future().compose(mapper -> InitDatabaseDao.init(vertx).future())
+        ConfigUtil.initConfig(vertx)
+            .future()
+            .compose(mapper -> InitDatabaseDao.init(vertx).future())
             .onFailure(startPromise::fail)
             .onSuccess(initDbResult -> {
                 MainRouter mainRouter = injector.getInstance(MainRouter.class);
                 WebSocketServer webSocketHandler = injector.getInstance(WebSocketServer.class);
+                ChatStateService chatStateService = injector.getInstance(ChatStateService.class);
                 Integer httpPort = ConfigUtil.getConfig().getHttpPort();
 
                 // Http Server
@@ -48,8 +52,12 @@ public class MainVerticle extends AbstractVerticle {
                 httpServer.webSocketHandler(webSocketHandler::handleWebSocket);
                 httpServer.listen(httpPort, http -> {
                     if (http.succeeded()) {
-                        startPromise.complete();
                         LOGGER.info(String.format("HTTP server started on : %d", httpPort));
+                        chatStateService.isInit()
+                            .future()
+                            .onComplete(startPromise::handle)
+                            .onSuccess(nothing -> LOGGER.info("MainVerticle initialized and ready"));
+
                     } else {
                         startPromise.fail(http.cause());
                         LOGGER.error("HTTP server error", http.cause());

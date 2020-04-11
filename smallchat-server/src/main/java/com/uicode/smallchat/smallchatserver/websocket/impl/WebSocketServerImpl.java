@@ -41,7 +41,6 @@ public class WebSocketServerImpl implements WebSocketServer {
 
     private Map<String, List<Pair<ServerWebSocket, String>>> subscriptions;
 
-
     @Inject
     public WebSocketServerImpl(WebSocketMediator webSocketMediator) {
         this.webSocketMediator = webSocketMediator;
@@ -91,11 +90,13 @@ public class WebSocketServerImpl implements WebSocketServer {
                     case WebSocketMsg.CHANNEL_MESSAGE_SUBJECT:
                         JsonObject data = receiveWebSocketMsg.getJsonObject("data");
                         SendChannelMessageMsg sendChannelMessage = data.mapTo(SendChannelMessageMsg.class);
-                        webSocketMediator.receiveSendMessage(userId, sendChannelMessage.getChannelId(), sendChannelMessage.getMessage());
+                        webSocketMediator.receiveSendMessage(userId, sendChannelMessage.getChannelId(),
+                                sendChannelMessage.getMessage());
                         break;
 
                     case WebSocketMsg.PING_SUBJECT:
-                        serverWebSocket.writeTextMessage(Json.encode(WebSocketMsg.of(WebSocketMsg.PONG_SUBJECT, "pong")));
+                        serverWebSocket
+                            .writeTextMessage(Json.encode(WebSocketMsg.of(WebSocketMsg.PONG_SUBJECT, "pong")));
                         break;
 
                     default:
@@ -122,14 +123,16 @@ public class WebSocketServerImpl implements WebSocketServer {
 
         Set<Cookie> nettyCookies = ServerCookieDecoder.STRICT.decode(headers.get(HttpHeaders.COOKIE));
         Optional<Cookie> jwtTokenCookie = nettyCookies.stream()
-                .filter(cookie -> GeneralConst.JWTTOKEN_COOKIE.equals(cookie.name())).findFirst();
+            .filter(cookie -> GeneralConst.JWTTOKEN_COOKIE.equals(cookie.name()))
+            .findFirst();
 
         if (!jwtTokenCookie.isPresent()) {
             result.fail("JwtToken cookie is absent");
             return result;
         }
 
-        this.webSocketMediator.authenticateUser(jwtTokenCookie.get().value()).future()
+        this.webSocketMediator.authenticateUser(jwtTokenCookie.get().value())
+            .future()
             .onComplete(authenticateResult -> {
                 if (authenticateResult.failed()) {
                     result.fail(authenticateResult.cause());

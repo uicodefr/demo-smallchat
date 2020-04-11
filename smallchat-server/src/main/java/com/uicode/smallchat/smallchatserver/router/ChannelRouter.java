@@ -38,7 +38,7 @@ public class ChannelRouter {
             requestHandler.fail(new InvalidDataException(INVALID_CHANNEL_ID_ERROR));
             return;
         }
-        MainRouter.mapResponse(channelService.getChannel(channelId), requestHandler);
+        MainRouter.mapResponse(channelService.getChannelFull(channelId), requestHandler);
     }
 
     private void connectToChannel(RoutingContext requestHandler) {
@@ -49,7 +49,7 @@ public class ChannelRouter {
         }
         try {
             String userId = MainRouter.getUserId(requestHandler)
-                    .orElseThrow(() -> new UnauthorizedException("User need to sign in"));
+                .orElseThrow(() -> new UnauthorizedException("User need to sign in"));
             MainRouter.mapResponse(channelService.connect(userId, channelId), requestHandler);
         } catch (UnauthorizedException exception) {
             requestHandler.fail(exception);
@@ -64,7 +64,7 @@ public class ChannelRouter {
         }
         try {
             String userId = MainRouter.getUserId(requestHandler)
-                    .orElseThrow(() -> new UnauthorizedException("User need to sign in"));
+                .orElseThrow(() -> new UnauthorizedException("User need to sign in"));
             MainRouter.mapResponse(channelService.disconnect(userId, channelId), requestHandler);
         } catch (UnauthorizedException exception) {
             requestHandler.fail(exception);

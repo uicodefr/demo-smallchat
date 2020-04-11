@@ -19,7 +19,7 @@ public class AdminTopicDelegateImpl implements AdminTopicDelegate {
 
     private static final Logger LOGGER = LogManager.getLogger(AdminTopicDelegateImpl.class);
 
-    private static final int TOPIC_NUM_PARTITION = 4;
+    private static final int TOPIC_NUM_PARTITION = 1;
     private static final short TOPIC_REPLICATION_FACTOR = 1;
 
     private final Vertx vertx;
@@ -54,13 +54,13 @@ public class AdminTopicDelegateImpl implements AdminTopicDelegate {
                 return;
             }
 
-            LOGGER.info("Create topic {} in createTopicIfNecessary", topic);
             NewTopic newTopic = new NewTopic(topic, TOPIC_NUM_PARTITION, TOPIC_REPLICATION_FACTOR);
             kafkaAdmin.createTopics(Collections.singletonList(newTopic), creationHandler -> {
                 // TopicExistsException is not a severe error
                 if (creationHandler.failed() && !(creationHandler.cause() instanceof TopicExistsException)) {
                     promise.fail(creationHandler.cause());
                 } else {
+                    LOGGER.info("Create topic {}", topic);
                     promise.complete();
                 }
             });

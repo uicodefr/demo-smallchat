@@ -2,6 +2,8 @@ import axios, { AxiosInstance } from 'axios';
 import { AlertType } from '../../const/alert-type.const';
 import { GlobalInfoService } from './global-info.service';
 import { myDi } from '../../util/my-di';
+import { UserModel } from '../../model/global/user.model';
+import { UrlConstant } from '../../const/url-constant';
 
 export class RestClientService {
   private axiosInstance: AxiosInstance;
@@ -9,7 +11,7 @@ export class RestClientService {
   private globalInfoService: GlobalInfoService;
 
   public constructor() {
-    this.globalInfoService = myDi.get(GlobalInfoService);
+    this.globalInfoService = myDi.get('GlobalInfoService');
     this.axiosInstance = axios.create();
 
     this.axiosInstance.interceptors.request.use(
@@ -52,5 +54,35 @@ export class RestClientService {
 
   public delete<T>(url: string): Promise<T> {
     return this.axiosInstance.delete(url).then((response) => response.data);
+  }
+
+  public login(username: string, password: string): Promise<UserModel | null> {
+    let formData = new FormData();
+    formData.append('username', username);
+    formData.append('password', password);
+
+    return axios
+      .post(UrlConstant.LOGIN, formData)
+      .then((response) => {
+        let user = null;
+        if (response.status === 200) {
+          user = response.data;
+        }
+        return user;
+      })
+      .catch((error) => {
+        return null;
+      });
+  }
+
+  public logout(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      axios
+        .post(UrlConstant.LOGOUT, null)
+        .catch((error) => this.globalInfoService.showAlert(AlertType.DANGER, '' + error, 0))
+        .finally(() => {
+          resolve();
+        });
+    });
   }
 }

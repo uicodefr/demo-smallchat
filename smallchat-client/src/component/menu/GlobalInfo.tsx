@@ -28,7 +28,7 @@ export class GlobalInfo extends React.Component<Props, State> {
       alerts: [],
     };
 
-    this.globalInfoService = myDi.get(GlobalInfoService);
+    this.globalInfoService = myDi.get('GlobalInfoService');
 
     this.closeAlert = this.closeAlert.bind(this);
   }

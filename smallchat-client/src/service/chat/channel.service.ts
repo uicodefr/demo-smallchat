@@ -7,7 +7,7 @@ export class ChannelService {
   private restClientService: RestClientService;
 
   public constructor() {
-    this.restClientService = myDi.get(RestClientService);
+    this.restClientService = myDi.get('RestClientService');
   }
 
   public getChannel(channelId: string): Promise<ChannelFullModel> {

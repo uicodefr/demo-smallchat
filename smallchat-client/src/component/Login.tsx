@@ -31,8 +31,8 @@ export class Login extends React.Component<Props, State> {
   constructor(props: Props) {
     super(props);
 
-    this.authenticationService = myDi.get(AuthenticationService);
-    this.globalInfoService = myDi.get(GlobalInfoService);
+    this.authenticationService = myDi.get('AuthenticationService');
+    this.globalInfoService = myDi.get('GlobalInfoService');
 
     this.state = {
       currentUser: this.authenticationService.getCurrentUser(),
@@ -134,9 +134,8 @@ export class Login extends React.Component<Props, State> {
                   </Form.Group>
                   {!this.state.loginInProgress ? (
                     <div className="buttonZone">
-                      <Button variant="primary" type="submit">
-                        {' '}
-                        LOGIN{' '}
+                      <Button variant="primary" type="submit" data-testid="login-button">
+                        LOGIN
                       </Button>
                     </div>
                   ) : (
@@ -149,9 +148,8 @@ export class Login extends React.Component<Props, State> {
             <div className="alreadyConnected">
               You are connected as <em>{this.state.currentUser.username}</em>
               <br />
-              <Button variant="danger" type="button" onClick={this.handleClickLogout}>
-                {' '}
-                LOGOUT{' '}
+              <Button variant="danger" type="button" onClick={this.handleClickLogout} data-testid="logout-button">
+                LOGOUT
               </Button>
             </div>
           )}

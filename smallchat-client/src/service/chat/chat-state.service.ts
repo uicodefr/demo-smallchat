@@ -8,7 +8,7 @@ export class ChatStateService {
   private restClientService: RestClientService;
 
   public constructor() {
-    this.restClientService = myDi.get(RestClientService);
+    this.restClientService = myDi.get('RestClientService');
   }
 
   public getChatState(): Promise<ChatStateModel> {

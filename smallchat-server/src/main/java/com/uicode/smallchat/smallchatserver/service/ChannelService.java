@@ -8,7 +8,7 @@ import io.vertx.core.Promise;
 
 public interface ChannelService {
 
-    Promise<ChannelFull> getChannel(String channelId);
+    Promise<ChannelFull> getChannelFull(String channelId);
 
     Promise<ChannelFull> connect(String userId, String channelId);
 

@@ -5,7 +5,7 @@ import { myDi } from '../../../util/my-di';
 
 const PrivateRoute = ({ component: Component, ...otherProps }: any) => {
   const isLogin = () => {
-    return !!myDi.get(AuthenticationService).getCurrentUser();
+    return !!myDi.get<AuthenticationService>('AuthenticationService').getCurrentUser();
   };
 
   return (

@@ -30,7 +30,7 @@ export class ChannelPanel extends React.Component<Props, State> {
   constructor(props: Props) {
     super(props);
 
-    this.chatService = myDi.get(ChatService);
+    this.chatService = myDi.get('ChatService');
 
     this.state = {
       loading: true,
@@ -62,7 +62,7 @@ export class ChannelPanel extends React.Component<Props, State> {
   }
 
   private scrollChannelShowToBottom() {
-    if (this.channelShowBottomRef.current) {
+    if (this.channelShowBottomRef?.current?.scrollIntoView) {
       this.channelShowBottomRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   }
@@ -177,12 +177,13 @@ export class ChannelPanel extends React.Component<Props, State> {
                           isInvalid={!!errors.messageTxt}
                           disabled={disabledForm}
                           onClick={this.cleanUnreadMessages}
+                          data-testid="message-input"
                         />
                       </Form.Group>
                     </div>
 
                     <div className="buttonZone">
-                      <Button variant="primary" type="submit" disabled={disabledForm}>
+                      <Button variant="primary" type="submit" disabled={disabledForm} data-testid="send-button">
                         Send
                       </Button>
                     </div>

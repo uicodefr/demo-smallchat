@@ -34,13 +34,8 @@ public class MainRouter {
     private final ChannelRouter channelRouter;
 
     @Inject
-    public MainRouter(
-        Vertx vertx,
-        GlobalRouter globalRouter,
-        UserRouter userRouter,
-        ChatStateRouter chatStateRouter,
-        ChannelRouter channelRouter
-    ) {
+    public MainRouter(Vertx vertx, GlobalRouter globalRouter, UserRouter userRouter, ChatStateRouter chatStateRouter,
+            ChannelRouter channelRouter) {
         router = Router.router(vertx);
 
         this.globalRouter = globalRouter;
@@ -115,15 +110,13 @@ public class MainRouter {
     }
 
     public static <T> void mapResponse(Promise<T> servicePromise, RoutingContext requestHandler) {
-        servicePromise.future()
-            .onFailure(requestHandler::fail)
-            .onSuccess(serviceResult -> {
-                if (serviceResult != null) {
-                    requestHandler.response().end(Json.encode(serviceResult));
-                } else {
-                    requestHandler.response().end();
-                }
-            });
+        servicePromise.future().onFailure(requestHandler::fail).onSuccess(serviceResult -> {
+            if (serviceResult != null) {
+                requestHandler.response().end(Json.encode(serviceResult));
+            } else {
+                requestHandler.response().end();
+            }
+        });
     }
 
     public static Optional<String> getUserId(RoutingContext requestHandler) {

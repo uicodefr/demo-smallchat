@@ -1,6 +1,6 @@
 import React from 'react';
 import './App.scss';
-import { Route, Switch } from 'react-router-dom';
+import { Route, Switch, BrowserRouter } from 'react-router-dom';
 import NotFound from './component/NotFound';
 import { Channel } from './component/Channel';
 import { Login } from './component/Login';
@@ -17,14 +17,14 @@ interface State {
 }
 
 export class App extends React.Component<Props, State> {
-  private authenticationService: AuthenticationService;
   private chatService: ChatService;
+  private authenticationService: AuthenticationService;
 
   constructor(props: Props) {
     super(props);
 
-    this.authenticationService = myDi.get(AuthenticationService);
-    this.chatService = myDi.get(ChatService);
+    this.chatService = myDi.get('ChatService');
+    this.authenticationService = myDi.get('AuthenticationService');
 
     this.state = {
       init: false,
@@ -50,16 +50,18 @@ export class App extends React.Component<Props, State> {
     }
 
     return (
-      <div id="App">
-        <Menu></Menu>
-        <Switch>
-          <Route exact path="/" component={Channel} />
-          <PrivateRoute path="/c/:channelId" component={Channel} />
-          <Route path="/signin" component={Login} />
-          <Route component={NotFound} />
-        </Switch>
-        <div style={{ display: 'none' }}>version: '0.1.5-SNAPSHOT'</div>
-      </div>
+      <BrowserRouter basename={`${process.env.PUBLIC_URL}/`}>
+        <div id="App">
+          <Menu></Menu>
+          <Switch>
+            <Route exact path="/" component={Channel} />
+            <PrivateRoute path="/c/:channelId" component={Channel} />
+            <Route path="/signin" component={Login} />
+            <Route component={NotFound} />
+          </Switch>
+          <div style={{ display: 'none' }}>version: '0.1.6-SNAPSHOT'</div>
+        </div>
+      </BrowserRouter>
     );
   }
 }

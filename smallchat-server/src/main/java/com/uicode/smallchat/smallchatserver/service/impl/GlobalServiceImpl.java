@@ -29,7 +29,7 @@ public class GlobalServiceImpl implements GlobalService {
 
     private static final Logger LOGGER = LogManager.getLogger(GlobalServiceImpl.class);
 
-    private static final String VERSION = "0.1.5-SNAPSHOT";
+    private static final String VERSION = "0.1.6-SNAPSHOT";
     private static final Date UPDATE = new Date();
 
     private final ParameterDao parameterDao;
@@ -48,6 +48,11 @@ public class GlobalServiceImpl implements GlobalService {
         this.producerDelegate = producerDelegate;
         this.consumerDelegate = consumerDelegate;
         this.adminTopicDelegate = adminTopicDelegate;
+
+        // XXX Prepare the topic test because it doesn't work without initialization
+        adminTopicDelegate.createTopicIfNecessary(TestingNotice.TOPIC)
+            .future()
+            .compose(nothing -> consumerDelegate.refreshSubscribe(TestingNotice.TOPIC).future());
     }
 
     @Override
@@ -62,13 +67,11 @@ public class GlobalServiceImpl implements GlobalService {
         // Test Messaging (kafka) and test parameterDao
         Future<String> testMessagingFuture = testMessaging().future();
         Future<Optional<String>> testDaoFuture = parameterDao.getParameterValue(ParameterConst.GENERAL_STATUS).future();
-        CompositeFuture.all(testMessagingFuture, testDaoFuture)
-            .onFailure(promise::fail)
-            .onSuccess(compositeResult -> {
-                status.setMessaging(testMessagingFuture.result());
-                testDaoFuture.result().ifPresent(status::setStatus);
-                promise.complete(status);
-            });
+        CompositeFuture.all(testMessagingFuture, testDaoFuture).onFailure(promise::fail).onSuccess(compositeResult -> {
+            status.setMessaging(testMessagingFuture.result());
+            testDaoFuture.result().ifPresent(status::setStatus);
+            promise.complete(status);
+        });
 
         LOGGER.info("Global Status asked");
         return promise;
@@ -78,14 +81,15 @@ public class GlobalServiceImpl implements GlobalService {
         Promise<String> promise = Promise.promise();
 
         // 1. Create topic if necessary
-        adminTopicDelegate.createTopicIfNecessary(TestingNotice.TOPIC).future()
+        adminTopicDelegate.createTopicIfNecessary(TestingNotice.TOPIC)
+            .future()
             .onFailure(promise::fail)
             .onSuccess(creationTopicResult -> {
                 // 2. Then, subscribe
                 consumerDelegate.subscribe(TestingNotice.TOPIC, TestingNotice.class, packageMsg -> {
                     packageMsg.unsubscribe();
                     promise.complete(packageMsg.getNotice().getValue());
-    
+
                 }, subscribeDone -> {
                     // 3. When the subscribe is done, publish
                     producerDelegate.publish(new TestingNotice("kafka")).future().onFailure(promise::tryFail);
@@ -113,26 +117,22 @@ public class GlobalServiceImpl implements GlobalService {
         Future<Optional<String>> maxParamFuture = parameterDao.getParameterValue(ParameterConst.LIKE_MAX).future();
         Future<Long> countLikesFuture = likeDao.count().future();
 
-        CompositeFuture.all(maxParamFuture, countLikesFuture)
-            .onFailure(promise::fail)
-            .onSuccess(compositeResult -> {
-                IdLongEntity result = new IdLongEntity();
-                Long maxLike = ParameterUtil.getLong(maxParamFuture.result(), 0l);
-    
-                if (countLikesFuture.result() > maxLike) {
-                    LOGGER.warn("AddLike : the maximum of likes is reached");
-                    promise.complete(result);
-                    return;
-                }
-    
-                likeDao.insert(clientIp, new Date()).future()
-                    .onFailure(promise::fail)
-                    .onSuccess(insertResult -> {
-                        result.setId(insertResult);
-                        LOGGER.info("AddLike successful");
-                        promise.complete(result);
-                    });
+        CompositeFuture.all(maxParamFuture, countLikesFuture).onFailure(promise::fail).onSuccess(compositeResult -> {
+            IdLongEntity result = new IdLongEntity();
+            Long maxLike = ParameterUtil.getLong(maxParamFuture.result(), 0l);
+
+            if (countLikesFuture.result() > maxLike) {
+                LOGGER.warn("AddLike : the maximum of likes is reached");
+                promise.complete(result);
+                return;
+            }
+
+            likeDao.insert(clientIp, new Date()).future().onFailure(promise::fail).onSuccess(insertResult -> {
+                result.setId(insertResult);
+                LOGGER.info("AddLike successful");
+                promise.complete(result);
             });
+        });
         return promise;
     }
 

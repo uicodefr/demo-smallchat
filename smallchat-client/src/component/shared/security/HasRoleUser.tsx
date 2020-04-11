@@ -25,7 +25,7 @@ export class HasRoleUser extends React.Component<Props, State> {
   constructor(props: Props) {
     super(props);
 
-    this.authenticationService = myDi.get(AuthenticationService);
+    this.authenticationService = myDi.get('AuthenticationService');
 
     this.state = {
       currentUser: this.authenticationService.getCurrentUser(),

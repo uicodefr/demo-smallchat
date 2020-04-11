@@ -27,9 +27,9 @@ export class ChatService {
   private unreadMessagesChannelMap = new Map<string, number>();
 
   public constructor() {
-    this.chatStateService = myDi.get(ChatStateService);
-    this.channelService = myDi.get(ChannelService);
-    this.authenticationService = myDi.get(AuthenticationService);
+    this.chatStateService = myDi.get('ChatStateService');
+    this.channelService = myDi.get('ChannelService');
+    this.authenticationService = myDi.get('AuthenticationService');
 
     this.authenticationService.getCurrentUserObservable().subscribe((user) => {
       this.currentUser = user?.username;
@@ -183,6 +183,9 @@ export class ChatService {
       if (unreadMessages !== undefined) {
         channelState.subscribed = true;
         channelState.unreadMessages = unreadMessages;
+      } else {
+        channelState.subscribed = false;
+        channelState.unreadMessages = 0;
       }
       return channelState;
     });

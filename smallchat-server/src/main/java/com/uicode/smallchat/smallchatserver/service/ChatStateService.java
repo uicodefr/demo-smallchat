@@ -8,6 +8,8 @@ import io.vertx.core.Promise;
 
 public interface ChatStateService {
 
+    Promise<Void> isInit();
+
     Promise<ChatState> getChatState();
 
     Promise<ChatStateInternal> getChatStateInternal();

@@ -46,8 +46,8 @@ public class ChatStateServiceImpl implements ChatStateService {
     private final ChannelService channelService;
     private final WebSocketMediator webSocketMediator;
 
+    private final Promise<Void> initPromise;
     private SubscriptionMsg subscription;
-
     private ChatStateInternal chatStateInt;
 
     @Inject
@@ -58,7 +58,14 @@ public class ChatStateServiceImpl implements ChatStateService {
         this.adminTopicDelegate = adminTopicDelegate;
         this.channelService = channelService;
         this.webSocketMediator = webSocketMediator;
-        this.getChatState();
+
+        this.initPromise = Promise.promise();
+        this.getChatState().future().<Void>mapEmpty().onComplete(initPromise::handle);
+    }
+
+    @Override
+    public Promise<Void> isInit() {
+        return initPromise;
     }
 
     @Override
@@ -97,7 +104,8 @@ public class ChatStateServiceImpl implements ChatStateService {
         }
 
         // First, create the topic if necessary
-        adminTopicDelegate.createTopicIfNecessary(ChatStateNotice.TOPIC).future()
+        adminTopicDelegate.createTopicIfNecessary(ChatStateNotice.TOPIC)
+            .future()
             .onFailure(promise::fail)
             .onSuccess(creationTopicResult -> {
                 // Then, subscribe
@@ -106,10 +114,12 @@ public class ChatStateServiceImpl implements ChatStateService {
                     mergeChatState(packageMsg.getNotice().getChatState());
                     // Publish the new ChatState to the WebSocket
                     webSocketMediator.send(WebSocketMsg.CHAT_STATE_SUBJECT, chatStateInt.toChatState());
-    
+
                 }, subscribeCompletion ->
                 // Finally, Resend Last Message after subscription
-                consumerDelegate.resendLastMessages(ChatStateNotice.TOPIC, 1).future().<Void>mapEmpty()
+                consumerDelegate.resendLastMessages(ChatStateNotice.TOPIC, 1)
+                    .future()
+                    .<Void>mapEmpty()
                     .onComplete(promise::handle));
             });
 
@@ -149,19 +159,18 @@ public class ChatStateServiceImpl implements ChatStateService {
 
     private <T> Promise<T> changeChatState(Function<ChatStateInternal, T> action) {
         Promise<T> promise = Promise.promise();
-        getChatStateInternal().future()
-            .onFailure(promise::fail)
-            .onSuccess(chatStateResult -> {
-                ChatStateInternal newChatState = chatStateResult;
-                T resultOnComplete = action.apply(newChatState);
-    
-                // Publish the newChatState on Kafka
-                ChatStateNotice message = new ChatStateNotice();
-                message.setChatState(newChatState);
-                producerDelegate.publish(message).future()
-                    .onFailure(promise::fail)
-                    .onSuccess(publishResult -> promise.complete(resultOnComplete));
-            });
+        getChatStateInternal().future().onFailure(promise::fail).onSuccess(chatStateResult -> {
+            ChatStateInternal newChatState = chatStateResult;
+            T resultOnComplete = action.apply(newChatState);
+
+            // Publish the newChatState on Kafka
+            ChatStateNotice message = new ChatStateNotice();
+            message.setChatState(newChatState);
+            producerDelegate.publish(message)
+                .future()
+                .onFailure(promise::fail)
+                .onSuccess(publishResult -> promise.complete(resultOnComplete));
+        });
         return promise;
     }
 
@@ -172,22 +181,21 @@ public class ChatStateServiceImpl implements ChatStateService {
         String topic = ChannelNotice.getTopicForChannelId(newChannel.getId());
 
         // First, Create the topic if necessary
-        adminTopicDelegate.createTopicIfNecessary(topic).future()
-        .compose(creationTopicResult ->
-            // Second, Change the chatState for creating the channel
-            changeChatState(newChatState -> {
-                if (newChatState.getChannels().size() > MAX_CHANNEL) {
-                    throw new LimitationException("Create channel failed because channels can not exceed " + MAX_CHANNEL);
-                }
+        adminTopicDelegate.createTopicIfNecessary(topic).future().compose(creationTopicResult ->
+        // Second, Change the chatState for creating the channel
+        changeChatState(newChatState -> {
+            if (newChatState.getChannels().size() > MAX_CHANNEL) {
+                throw new LimitationException("Create channel failed because channels can not exceed " + MAX_CHANNEL);
+            }
 
-                newChannel.setDelete(false);
-                newChatState.getChannels().put(newChannel.getId(), newChannel);
-                return newChannel;
-            }).future()
-        ).compose(newChatStateResult ->
-            // Then, notify the creation of the channel
-            channelService.sendServerMessage(newChannel.getId(), CREATED_CHANNEL_MESSAGE, MessageCode.CREATED).future().map(newChatStateResult)
-        ).onComplete(promise::handle);
+            newChannel.setDelete(false);
+            newChatState.getChannels().put(newChannel.getId(), newChannel);
+            return newChannel;
+        }).future()).compose(newChatStateResult ->
+        // Then, notify the creation of the channel
+        channelService.sendServerMessage(newChannel.getId(), CREATED_CHANNEL_MESSAGE, MessageCode.CREATED)
+            .future()
+            .map(newChatStateResult)).onComplete(promise::handle);
 
         return promise;
     }
@@ -205,14 +213,13 @@ public class ChatStateServiceImpl implements ChatStateService {
             channelToDelete.setDelete(true);
             newChatState.getChannels().put(channelId, channelToDelete);
             return null;
-        }).future()
-        .compose(chatStateResult ->
-            // Second, notify the deletion of the channel
-            channelService.sendServerMessage(channelId, DELETED_CHANNEL_MESSAGE, MessageCode.DELETED).future()
-        ).compose(sendResult ->
+        }).future().compose(chatStateResult ->
+        // Second, notify the deletion of the channel
+        channelService.sendServerMessage(channelId, DELETED_CHANNEL_MESSAGE, MessageCode.DELETED).future())
+            .compose(sendResult ->
             // Then, Delete the topic
-            adminTopicDelegate.deleteTopic(topic).future()
-        ).onComplete(promise::handle);
+            adminTopicDelegate.deleteTopic(topic).future())
+            .onComplete(promise::handle);
 
         return promise;
     }
