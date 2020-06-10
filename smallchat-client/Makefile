@@ -13,18 +13,18 @@ all:
 
 test:
 	@echo "test (version: $(VERSION))"
-	npm install
+	npm ci
 	npm test -- --watchAll=false
 
 buildOnly:
 	@echo "buildOnly (version: $(VERSION))"
-	npm install
+	npm ci
 	npm run build
 	mkdir -p dist && rm -rf ./dist/smallchat-client && cp -r ./build ./dist/smallchat-client && rm -r ./build
 
 build:
 	@echo "build (version: $(VERSION))"
-	npm install
+	npm ci
 	npm run build
 	mkdir -p dist && rm -rf ./dist/smallchat-client && cp -r ./build ./dist/smallchat-client && rm -r ./build
 	cd dist && zip -r ../smallchat-client-$(VERSION).zip ./smallchat-client
