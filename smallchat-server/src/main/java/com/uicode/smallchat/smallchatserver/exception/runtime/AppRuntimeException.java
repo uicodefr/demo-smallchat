@@ -1,5 +1,6 @@
-package com.uicode.smallchat.smallchatserver.exception;
+package com.uicode.smallchat.smallchatserver.exception.runtime;
 
+import com.uicode.smallchat.smallchatserver.exception.HttpStatusReturn;
 import com.uicode.smallchat.smallchatserver.util.HttpStatus;
 
 public abstract class AppRuntimeException extends RuntimeException implements HttpStatusReturn {

@@ -9,6 +9,7 @@ import java.util.regex.Pattern;
 import java.util.Set;
 import java.util.UUID;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -158,22 +159,24 @@ public class ConsumerDelegateImpl implements ConsumerDelegate {
 
         List<T> resultList = new ArrayList<>();
 
-        Future.<Void>future(subscribePromise ->
-        // 1. Subscribe
-        anonymousConsumer.subscribe(topic, subscribePromise::handle)
+        Future.<Void>future(subscribePromise -> {
+            // 1. Subscribe
+            LOGGER.debug("getLastMessages - 1. subscribe");
+            anonymousConsumer.subscribe(topic, subscribePromise::handle);
+        }).compose(subscribeDone -> {
+            // 2. Change the position
+            LOGGER.debug("getLastMessages - 2. change the position");
+            return Future.<Map<TopicPartition, Long>>future(
+                    changePositionPromise -> changePosition(anonymousConsumer, topic, messagesToGet).future()
+                        .onComplete(changePositionPromise));
 
-        ).compose(subscribeDone ->
-        // 2. Change the position
-        Future.<Map<TopicPartition, Long>>future(
-                changePositionPromise -> changePosition(anonymousConsumer, topic, messagesToGet).future()
-                    .onComplete(changePositionPromise))
+        }).compose(changePositionResult -> {
+            // 3. Check current position with the end position
+            // To Remove Empty TopicPartition
+            LOGGER.debug("getLastMessages - 3. check changePosition");
+            return checkChangePositionResult(anonymousConsumer, changePositionResult).future();
 
-        ).compose(changePositionResult ->
-        // 3. Check current position with the end position
-        // To Remove Empty TopicPartition
-        checkChangePositionResult(anonymousConsumer, changePositionResult).future()
-
-        ).onFailure(resultPromise::fail).onSuccess(checkPositionResult -> {
+        }).onFailure(resultPromise::fail).onSuccess(checkPositionResult -> {
             if (checkPositionResult.isEmpty()) {
                 resultPromise.complete(resultList);
                 return;
@@ -183,6 +186,7 @@ public class ConsumerDelegateImpl implements ConsumerDelegate {
 
             // 4. Receive Messages and add it to the list
             // and complete when all messages are received
+            LOGGER.debug("getLastMessages - 4. receive messages");
             anonymousConsumer.handler(consumerRecord -> {
                 resultList.add(consumerRecord.value().mapTo(type));
 
@@ -242,17 +246,27 @@ public class ConsumerDelegateImpl implements ConsumerDelegate {
                 continue;
             }
 
-            Future<Void> localFuture = Future.<Long>future(positionPromise ->
-            // Get End Offets
-            consumer.endOffsets(topicPartition, positionPromise::handle)
+            Future<Void> localFuture = Future.<Long>future(endPositionPromise -> {
+                // Get End Offset
+                LOGGER.debug("changePositionForPartitions - get end offset");
+                consumer.endOffsets(topicPartition, endPositionPromise::handle);
 
-            ).compose(endPosition ->
+            }).compose(endPosition -> Future.<Pair<Long, Long>>future(pairPositionPromise -> {
+                // Get Beginning Offset
+                LOGGER.debug("changePositionForPartitions - get beginning offset");
+                consumer.beginningOffsets(topicPartition, beginPositionHandler -> pairPositionPromise
+                    .handle(beginPositionHandler.map(beginPosition -> Pair.of(beginPosition, endPosition))));
+
+            })).compose(pairPosition ->
             // Change the position for the consumer
             Future.<Void>future(seekPromise -> {
-                LOGGER.trace("changePositionForPartitions for topic {} - endPosition : {}", topic, endPosition);
+                Long beginPosition = pairPosition.getLeft();
+                Long endPosition = pairPosition.getRight();
+                LOGGER.trace("changePositionForPartitions for topic {} - beginPosition : {} -  endPosition : {}", topic,
+                        beginPosition, endPosition);
 
                 topicPartitionWithEndPosition.put(topicPartition, endPosition);
-                long newPosition = Math.max(0, endPosition - messagesToRewind);
+                long newPosition = Math.max(beginPosition, endPosition - messagesToRewind);
                 consumer.seek(topicPartition, newPosition, seekPromise::handle);
             }));
 

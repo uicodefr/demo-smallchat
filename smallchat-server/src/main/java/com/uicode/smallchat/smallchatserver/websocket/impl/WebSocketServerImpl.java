@@ -12,6 +12,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.google.inject.Inject;
+import com.uicode.smallchat.smallchatserver.exception.InvalidStateException;
 import com.uicode.smallchat.smallchatserver.model.user.UserPayload;
 import com.uicode.smallchat.smallchatserver.util.GeneralConst;
 import com.uicode.smallchat.smallchatserver.util.HttpStatus;
@@ -85,6 +86,10 @@ public class WebSocketServerImpl implements WebSocketServer {
                     JsonObject receiveWebSocketMsg = new JsonObject(textHandler);
                     String subject = receiveWebSocketMsg.getString("subject");
 
+                    if (subject == null) {
+                        LOGGER.error("No subject on message : {}", textHandler.trim());
+                    }
+
                     switch (subject) {
 
                     case WebSocketMsg.CHANNEL_MESSAGE_SUBJECT:
@@ -100,7 +105,7 @@ public class WebSocketServerImpl implements WebSocketServer {
                         break;
 
                     default:
-                        LOGGER.error("Message unknown : {}", textHandler.trim());
+                        LOGGER.error("Subject on message unknown : {}", textHandler.trim());
                         break;
                     }
 
@@ -149,11 +154,16 @@ public class WebSocketServerImpl implements WebSocketServer {
     }
 
     @Override
-    public void connectUserForSubscription(String userId, String subscriptionId, boolean connection) {
+    public void connectUserForSubscription(String userId, String subscriptionId, boolean connection)
+            throws InvalidStateException {
         Pair<ServerWebSocket, String> userConnection = connections.get(userId);
         if (userConnection == null) {
-            LOGGER.error("No userConnection for userId : {}", userId);
-            return;
+            if (connection) {
+                throw new InvalidStateException(String.format("No userConnection for userId : %s", userId));
+            } else {
+                LOGGER.error("No userConnection for userId : {}", userId);
+                return;
+            }
         }
 
         if (connection) {
@@ -172,6 +182,8 @@ public class WebSocketServerImpl implements WebSocketServer {
             subject = WebSocketMsg.CHANNEL_MESSAGE_SUBJECT;
         }
         String finalSubject = subject;
+
+        LOGGER.trace("Send message on subject : {}", finalSubject);
 
         getSubscriptionList(subscriptionId).forEach(connection -> {
             ServerWebSocket serverWebSocket = connection.getLeft();

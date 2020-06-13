@@ -1,5 +1,7 @@
 package com.uicode.smallchat.smallchatserver.websocket;
 
+import com.uicode.smallchat.smallchatserver.exception.InvalidStateException;
+
 import io.vertx.core.Promise;
 import io.vertx.ext.auth.User;
 
@@ -7,7 +9,7 @@ public interface WebSocketMediator {
 
     Promise<User> authenticateUser(String jwtToken);
 
-    void connectUserForSubscription(String userId, String subscriptionId, boolean connection);
+    void connectUserForSubscription(String userId, String subscriptionId, boolean connection) throws InvalidStateException;
 
     void disconnectSubscription(String userId, String subscriptionId);
 

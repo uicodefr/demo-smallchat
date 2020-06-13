@@ -8,6 +8,9 @@ public class ChannelFull extends Channel {
 
     private List<ChannelMessage> messages;
 
+    public ChannelFull() {
+    }
+
     public ChannelFull(Channel channel, List<ChannelMessage> messages) {
         super(channel);
         this.messages = messages;

@@ -1,4 +1,4 @@
-package com.uicode.smallchat.smallchatserver.exception;
+package com.uicode.smallchat.smallchatserver.exception.runtime;
 
 import com.uicode.smallchat.smallchatserver.util.HttpStatus;
 

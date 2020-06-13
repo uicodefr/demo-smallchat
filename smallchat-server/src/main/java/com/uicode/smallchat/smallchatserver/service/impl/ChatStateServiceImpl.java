@@ -10,8 +10,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.google.inject.Inject;
-import com.uicode.smallchat.smallchatserver.exception.LimitationException;
-import com.uicode.smallchat.smallchatserver.exception.NotFoundException;
+import com.uicode.smallchat.smallchatserver.exception.runtime.LimitationException;
+import com.uicode.smallchat.smallchatserver.exception.runtime.NotFoundException;
 import com.uicode.smallchat.smallchatserver.messaging.AdminTopicDelegate;
 import com.uicode.smallchat.smallchatserver.messaging.ConsumerDelegate;
 import com.uicode.smallchat.smallchatserver.messaging.ProducerDelegate;

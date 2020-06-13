@@ -1,6 +1,6 @@
 package com.uicode.smallchat.smallchatserver.websocket.impl;
 
-class SendChannelMessageMsg {
+public class SendChannelMessageMsg {
 
     private String channelId;
 

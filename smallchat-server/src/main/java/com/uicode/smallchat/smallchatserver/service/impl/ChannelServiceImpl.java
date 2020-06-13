@@ -9,7 +9,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.google.inject.Inject;
-import com.uicode.smallchat.smallchatserver.exception.NotFoundException;
+import com.uicode.smallchat.smallchatserver.exception.InvalidStateException;
+import com.uicode.smallchat.smallchatserver.exception.runtime.NotFoundException;
 import com.uicode.smallchat.smallchatserver.messaging.ConsumerDelegate;
 import com.uicode.smallchat.smallchatserver.messaging.ProducerDelegate;
 import com.uicode.smallchat.smallchatserver.model.channel.ChannelFull;
@@ -81,9 +82,15 @@ public class ChannelServiceImpl implements ChannelService {
                 sendServerMessage(channelId, connectionMessage, MessageCode.CONNECT).future().map(channel))
             .compose(channel -> {
                 // 4. Connect the webSocket and get last channel messages
-                webSocketMediator.connectUserForSubscription(userId, getSubscriptionId(channelId), true);
-                return getChannelMessages(channelId).future()
-                    .map(channelMessages -> new ChannelFull(channel, channelMessages));
+                try {
+                    webSocketMediator.connectUserForSubscription(userId, getSubscriptionId(channelId), true);
+                    return getChannelMessages(channelId).future()
+                            .map(channelMessages -> new ChannelFull(channel, channelMessages));
+                } catch (InvalidStateException exception) {
+                    Promise<ChannelFull> promiseError = Promise.promise();
+                    promiseError.fail(exception);
+                    return promiseError.future();
+                }
             }).onComplete(promise::handle);
 
         return promise;
@@ -97,8 +104,12 @@ public class ChannelServiceImpl implements ChannelService {
 
         sendServerMessage(channelId, disconnectionMessage, MessageCode.DISCONNECT).future()
             .compose(channelMessage -> Future.<Void>future(disconnectWebSocketPromise -> {
-                webSocketMediator.connectUserForSubscription(userId, getSubscriptionId(channelId), false);
-                disconnectWebSocketPromise.complete();
+                try {
+                    webSocketMediator.connectUserForSubscription(userId, getSubscriptionId(channelId), false);
+                    disconnectWebSocketPromise.complete();
+                } catch (InvalidStateException exception) {
+                    disconnectWebSocketPromise.fail(exception);
+                }
             }))
             .onComplete(promise::handle);
 
