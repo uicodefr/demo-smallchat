@@ -29,7 +29,7 @@ public class GlobalServiceImpl implements GlobalService {
 
     private static final Logger LOGGER = LogManager.getLogger(GlobalServiceImpl.class);
 
-    private static final String VERSION = "0.1.7-SNAPSHOT";
+    private static final String VERSION = "0.1.8-SNAPSHOT";
     private static final Date UPDATE = new Date();
 
     private final ParameterDao parameterDao;
