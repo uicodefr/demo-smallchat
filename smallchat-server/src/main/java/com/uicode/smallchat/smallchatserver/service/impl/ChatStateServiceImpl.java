@@ -116,6 +116,7 @@ public class ChatStateServiceImpl implements ChatStateService {
                     webSocketMediator.send(WebSocketMsg.CHAT_STATE_SUBJECT, chatStateInt.toChatState());
 
                 }, subscribeCompletion ->
+
                 // Finally, Resend Last Message after subscription
                 consumerDelegate.resendLastMessages(ChatStateNotice.TOPIC, 1)
                     .future()

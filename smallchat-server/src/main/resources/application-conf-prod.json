@@ -1,7 +1,7 @@
 {
 	"confId": 1,
 	"httpPort": 8080,
-	"sqlitePath": "database.sqlite",
+	"sqlitePath": "db/database.sqlite",
 	"kafkaProducer": {
 		"bootstrap.servers": "smallchat-kafka:9092",
 		"key.serializer": "org.apache.kafka.common.serialization.StringSerializer",

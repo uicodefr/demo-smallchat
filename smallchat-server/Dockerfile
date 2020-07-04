@@ -5,6 +5,9 @@ MAINTAINER uicode.fr
 RUN mkdir /log
 VOLUME /log
 
+RUN mkdir /db
+VOLUME /db
+
 EXPOSE 8080
 
 COPY ./server.jar /server.jar

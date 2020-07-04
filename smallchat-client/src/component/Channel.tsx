@@ -71,6 +71,7 @@ export class Channel extends React.Component<Props, State> {
   }
 
   render() {
+    const currentUser = this.state.currentUser;
     const chatState = this.state.chatState;
 
     return (
@@ -85,7 +86,7 @@ export class Channel extends React.Component<Props, State> {
                 <ListGroup variant="flush" className="smallItem">
                   {chatState.users.map((user) => (
                     <ListGroup.Item key={user.id} title={user.id}>
-                      {user.pseudo}
+                      {user.id === currentUser?.username ? <em>{user.pseudo}</em> : <>{user.pseudo}</>}
                     </ListGroup.Item>
                   ))}
                 </ListGroup>
@@ -101,8 +102,8 @@ export class Channel extends React.Component<Props, State> {
             <ChannelPanel channelId={this.state.selectedChannelId} />
           ) : (
             <Jumbotron className="helloPanel">
-              <h1>Welcome !</h1>
-              {this.state.currentUser ? (
+              <h1>Welcome {currentUser?.username} !</h1>
+              {currentUser ? (
                 <p>Select a channel to the right to begin chatting with others.</p>
               ) : (
                 <>

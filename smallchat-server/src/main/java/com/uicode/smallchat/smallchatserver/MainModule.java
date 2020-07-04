@@ -12,10 +12,12 @@ import com.uicode.smallchat.smallchatserver.messaging.ProducerDelegate;
 import com.uicode.smallchat.smallchatserver.messaging.impl.AdminTopicDelegateImpl;
 import com.uicode.smallchat.smallchatserver.messaging.impl.ConsumerDelegateImpl;
 import com.uicode.smallchat.smallchatserver.messaging.impl.ProducerDelegateImpl;
+import com.uicode.smallchat.smallchatserver.service.BackgroundService;
 import com.uicode.smallchat.smallchatserver.service.ChannelService;
 import com.uicode.smallchat.smallchatserver.service.ChatStateService;
 import com.uicode.smallchat.smallchatserver.service.GlobalService;
 import com.uicode.smallchat.smallchatserver.service.UserService;
+import com.uicode.smallchat.smallchatserver.service.impl.BackgroundServiceImpl;
 import com.uicode.smallchat.smallchatserver.service.impl.ChannelServiceImpl;
 import com.uicode.smallchat.smallchatserver.service.impl.ChatStateServiceImpl;
 import com.uicode.smallchat.smallchatserver.service.impl.GlobalServiceImpl;
@@ -50,6 +52,7 @@ public class MainModule extends AbstractModule {
         bind(ChatStateService.class).to(ChatStateServiceImpl.class).in(Scopes.SINGLETON);
         bind(GlobalService.class).to(GlobalServiceImpl.class).in(Scopes.SINGLETON);
         bind(UserService.class).to(UserServiceImpl.class).in(Scopes.SINGLETON);
+        bind(BackgroundService.class).to(BackgroundServiceImpl.class).in(Scopes.SINGLETON);
 
         bind(WebSocketServer.class).to(WebSocketServerImpl.class).in(Scopes.SINGLETON);
         bind(WebSocketMediator.class).to(WebSocketMediatorImpl.class).in(Scopes.SINGLETON);

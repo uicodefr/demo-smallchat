@@ -72,22 +72,27 @@ public class WebSocketServerImpl implements WebSocketServer {
             webSocketMediator.receiveUserConnection(userId, true);
             getSubscriptionList(WebSocketMsg.CHAT_STATE_SUBJECT).add(currentConnection);
 
-            serverWebSocket.endHandler(endHandler -> {
+            serverWebSocket.closeHandler(endHandler -> {
                 connections.remove(userId);
                 webSocketMediator.receiveUserConnection(userId, false);
                 for (String subscriptionId : subscriptions.keySet()) {
-                    getSubscriptionList(subscriptionId).remove(currentConnection);
-                    webSocketMediator.disconnectSubscription(userId, subscriptionId);
+                    if (getSubscriptionList(subscriptionId).remove(currentConnection)) {
+                        webSocketMediator.disconnectSubscription(userId, subscriptionId);
+                    }
                 }
             });
 
-            serverWebSocket.textMessageHandler(textHandler -> {
+            serverWebSocket.exceptionHandler(exception -> {
+                LOGGER.error("Error with server WebSocket", exception);
+            });
+
+            serverWebSocket.textMessageHandler(textMessage -> {
                 try {
-                    JsonObject receiveWebSocketMsg = new JsonObject(textHandler);
+                    JsonObject receiveWebSocketMsg = new JsonObject(textMessage);
                     String subject = receiveWebSocketMsg.getString("subject");
 
                     if (subject == null) {
-                        LOGGER.error("No subject on message : {}", textHandler.trim());
+                        LOGGER.error("No subject on message : {}", textMessage.trim());
                     }
 
                     switch (subject) {
@@ -105,12 +110,12 @@ public class WebSocketServerImpl implements WebSocketServer {
                         break;
 
                     default:
-                        LOGGER.error("Subject on message unknown : {}", textHandler.trim());
+                        LOGGER.error("Subject on message unknown : {}", textMessage.trim());
                         break;
                     }
 
                 } catch (Exception exception) {
-                    LOGGER.error(String.format("Receive bad message : %s", textHandler.trim()), exception);
+                    LOGGER.error(String.format("Receive bad message : %s", textMessage.trim()), exception);
                 }
             });
 

@@ -55,7 +55,12 @@ class IntegrationTest extends TestBase {
         HttpClient httpClient = vertx.createHttpClient();
 
         // 1. Login
-        login(webClient).future().compose(testData ->
+        login(webClient).future().compose(testData -> {
+            // 1.b. Wait 2000ms after login for global initialization
+            Promise<TestData> waitPromise = Promise.promise();
+            vertx.setTimer(2000, timerResult -> waitPromise.complete(testData));
+            return waitPromise.future();
+        }).compose(testData ->
         // 2. WebSocket connection
         webSocketConnection(httpClient, testData).future()).compose(testData ->
         // 3. Create channel
@@ -66,12 +71,12 @@ class IntegrationTest extends TestBase {
         getChatState(webClient, testData).future()).compose(testData ->
         // 6. Send message
         sendMessage(webClient, testData).future()).compose(testData -> {
-            // 7. Wait 500ms after sending message
+            // 6.b. Wait 500ms after sending message
             Promise<TestData> waitPromise = Promise.promise();
             vertx.setTimer(500, timerResult -> waitPromise.complete(testData));
             return waitPromise.future();
         }).compose(testData ->
-        // 8. Get messages
+        // 7. Get messages
         getMessages(webClient, testData).future())
             // End
             .onFailure(error -> {
@@ -212,7 +217,8 @@ class IntegrationTest extends TestBase {
                 ChatState chatState = responseResult.result().body().mapTo(ChatState.class);
                 Assertions.assertThat(chatState).isNotNull();
                 Assertions.assertThat(chatState.getUsers()).hasSize(1);
-                Assertions.assertThat(chatState.getChannels()).hasSize(1);
+                // The 2 automatic channels (test, welcome) and the created one
+                Assertions.assertThat(chatState.getChannels()).hasSize(3);
                 Assertions.assertThat(chatState.getUpdateDate()).isNotNull();
 
                 result.complete(testData);

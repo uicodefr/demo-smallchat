@@ -7,6 +7,7 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.uicode.smallchat.smallchatserver.dao.InitDatabaseDao;
 import com.uicode.smallchat.smallchatserver.router.MainRouter;
+import com.uicode.smallchat.smallchatserver.service.BackgroundService;
 import com.uicode.smallchat.smallchatserver.service.ChatStateService;
 import com.uicode.smallchat.smallchatserver.util.ConfigUtil;
 import com.uicode.smallchat.smallchatserver.websocket.WebSocketServer;
@@ -44,6 +45,7 @@ public class MainVerticle extends AbstractVerticle {
                 MainRouter mainRouter = injector.getInstance(MainRouter.class);
                 WebSocketServer webSocketHandler = injector.getInstance(WebSocketServer.class);
                 ChatStateService chatStateService = injector.getInstance(ChatStateService.class);
+                BackgroundService backgroundService = injector.getInstance(BackgroundService.class);
                 Integer httpPort = ConfigUtil.getConfig().getHttpPort();
 
                 // Http Server
@@ -56,7 +58,10 @@ public class MainVerticle extends AbstractVerticle {
                         chatStateService.isInit()
                             .future()
                             .onComplete(startPromise::handle)
-                            .onSuccess(nothing -> LOGGER.info("MainVerticle initialized and ready"));
+                            .onSuccess(nothing -> {
+                                LOGGER.info("MainVerticle initialized and ready");
+                                backgroundService.init();
+                            });
 
                     } else {
                         startPromise.fail(http.cause());
