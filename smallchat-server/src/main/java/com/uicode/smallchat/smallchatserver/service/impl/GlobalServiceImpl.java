@@ -17,6 +17,7 @@ import com.uicode.smallchat.smallchatserver.model.global.CountLikes;
 import com.uicode.smallchat.smallchatserver.model.global.GlobalStatus;
 import com.uicode.smallchat.smallchatserver.model.messagingnotice.TestingNotice;
 import com.uicode.smallchat.smallchatserver.service.GlobalService;
+import com.uicode.smallchat.smallchatserver.util.AppInfoUtil;
 import com.uicode.smallchat.smallchatserver.util.ConfigUtil;
 import com.uicode.smallchat.smallchatserver.util.parameter.ParameterConst;
 import com.uicode.smallchat.smallchatserver.util.parameter.ParameterUtil;
@@ -24,12 +25,13 @@ import com.uicode.smallchat.smallchatserver.util.parameter.ParameterUtil;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
+import io.vertx.core.Vertx;
+import io.vertx.core.json.JsonObject;
 
 public class GlobalServiceImpl implements GlobalService {
 
     private static final Logger LOGGER = LogManager.getLogger(GlobalServiceImpl.class);
 
-    private static final String VERSION = "0.1.10-SNAPSHOT";
     private static final Date UPDATE = new Date();
 
     private final ParameterDao parameterDao;
@@ -39,8 +41,10 @@ public class GlobalServiceImpl implements GlobalService {
     private final ConsumerDelegate consumerDelegate;
     private final AdminTopicDelegate adminTopicDelegate;
 
+    private JsonObject appInfo;
+
     @Inject
-    public GlobalServiceImpl(ParameterDao parameterDao, LikeDao likeDao, ProducerDelegate producerDelegate,
+    public GlobalServiceImpl(Vertx vertx, ParameterDao parameterDao, LikeDao likeDao, ProducerDelegate producerDelegate,
             ConsumerDelegate consumerDelegate, AdminTopicDelegate adminTopicDelegate) {
         this.parameterDao = parameterDao;
         this.likeDao = likeDao;
@@ -53,6 +57,16 @@ public class GlobalServiceImpl implements GlobalService {
         adminTopicDelegate.createTopicIfNecessary(TestingNotice.TOPIC)
             .future()
             .compose(nothing -> consumerDelegate.refreshSubscribe(TestingNotice.TOPIC).future());
+
+        AppInfoUtil.getAppInfo(vertx)
+            .future()
+            .onSuccess(info -> this.appInfo = info)
+            .onFailure(exception -> LOGGER.error("Error while getting appInfo from file", exception));
+    }
+
+    @Override
+    public JsonObject getAppInfo() {
+        return appInfo;
     }
 
     @Override
@@ -62,7 +76,9 @@ public class GlobalServiceImpl implements GlobalService {
         status.setConfId(ConfigUtil.getConfig().getConfId());
         status.setUpDate(UPDATE);
         status.setCurrentDate(new Date());
-        status.setVersion(VERSION);
+        if (this.appInfo != null) {
+            status.setVersion(this.appInfo.getString("version"));
+        }
 
         // Test Messaging (kafka) and test parameterDao
         Future<String> testMessagingFuture = testMessaging().future();

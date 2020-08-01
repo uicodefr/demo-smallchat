@@ -15,7 +15,7 @@ jobs:
       working-directory: smallchat-server
 
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v2
     - name: Set up JDK
       uses: actions/setup-java@v1
       with:
@@ -47,7 +47,7 @@ jobs:
       working-directory: ${{ env.working-directory }}
 
     - name : Prepare Deploy
-      uses: actions/upload-artifact@v1
+      uses: actions/upload-artifact@v2
       with:
         name: server-version
         path: server-version.txt
@@ -61,7 +61,7 @@ jobs:
       working-directory: smallchat-client
 
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v2
     - name: Use Node.js
       uses: actions/setup-node@v1
       with:
@@ -91,7 +91,7 @@ jobs:
       working-directory: ${{ env.working-directory }}
 
     - name : Prepare Deploy
-      uses: actions/upload-artifact@v1
+      uses: actions/upload-artifact@v2
       with:
         name: client-version
         path: client-version.txt
@@ -105,18 +105,18 @@ jobs:
       SSH_KEY: ${{ secrets.QA_SSH_KEY }}
 
     steps:
-      - uses: actions/download-artifact@v1
+      - uses: actions/download-artifact@v2
         with:
           name: server-version
 
-      - uses: actions/download-artifact@v1
+      - uses: actions/download-artifact@v2
         with:
           name: client-version
 
       - name: Deploy
         run: |
-          serverVersion=$(cat server-version/server-version.txt)
-          clientVersion=$(cat client-version/client-version.txt)
+          serverVersion=$(cat server-version.txt)
+          clientVersion=$(cat client-version.txt)
           echo "server: $serverVersion // client: $clientVersion"
           which ssh-agent || ( apt-get update -y && apt-get install openssh-client -y )
           eval $(ssh-agent)

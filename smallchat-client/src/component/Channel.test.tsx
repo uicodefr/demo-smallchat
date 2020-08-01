@@ -7,7 +7,7 @@ import { myDi } from '../util/my-di';
 import { Channel } from './Channel';
 import { ChatServiceMock } from '../service/chat/chat.service.mock';
 import { MemoryRouter } from 'react-router-dom';
-import PrivateRoute from './shared/security/PrivateRoute';
+import { PrivateRoute } from './shared/security/PrivateRoute';
 
 describe('Channel', () => {
   const mockRestClientService = new RestClientServiceMock();

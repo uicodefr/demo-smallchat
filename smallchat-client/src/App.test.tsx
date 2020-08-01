@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, waitForElement, fireEvent } from '@testing-library/react';
+import { render, fireEvent } from '@testing-library/react';
 import { App } from './App';
 import { AppDi } from './App.di';
 import { UrlConstant } from './const/url-constant';
@@ -22,7 +22,7 @@ describe('App', () => {
 
   test('Loads and works', async () => {
     const appRender = render(<App />);
-    await waitForElement(() => appRender.getByText(/Small Chat/));
+    await appRender.findByText(/Small Chat/);
     expect(appRender.getByText(/Small/)).toBeTruthy();
     expect(appRender.getAllByText(/Channel 1/)).toBeTruthy();
     expect(appRender.getAllByText(/Channel 2/)).toBeTruthy();
@@ -37,7 +37,7 @@ describe('App', () => {
 
     expect(appRender.queryByText(/Create new channel/)).toBeFalsy();
     fireEvent.click(appRender.getByTitle('Settings'));
-    await waitForElement(() => appRender.getByText(/Create new channel/));
+    await appRender.findByText(/Create new channel/);
     expect(appRender.getAllByText(/Channel 1/)).toBeTruthy();
     expect(appRender.getAllByText(/Channel 2/)).toBeTruthy();
     expect(appRender.getAllByText(/Close/)).toBeTruthy();
