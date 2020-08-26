@@ -6,7 +6,7 @@
 
 	<groupId>com.uicode.demo.smallchat</groupId>
 	<artifactId>smallchat-server</artifactId>
-	<version>0.2.0-SNAPSHOT</version>
+	<version>0.3.0-SNAPSHOT</version>
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

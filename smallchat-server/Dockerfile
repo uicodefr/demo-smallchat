@@ -1,6 +1,6 @@
 FROM adoptopenjdk/openjdk11:alpine-slim
 
-MAINTAINER uicode.fr
+LABEL maintainer="uicode.fr"
 
 RUN mkdir /log
 VOLUME /log

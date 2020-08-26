@@ -1,6 +1,6 @@
 VERSION=$(shell sed "s/.*\"version\": \"\(.*\)\".*/\1/;t;d" package.json)
 NEXUS_USER=deployment
-NEXUS_URL=nexus.uicode.dev:8123
+DOCKER_URL=docker.uicode.dev
 NEXUS_RAW_PUSH_URL=https://nexus.uicode.dev/service/rest/v1/components?repository=raw
 NEXUS_RAW_GET_URL=https://nexus.uicode.dev/repository/raw/
 
@@ -37,8 +37,8 @@ containerize:
 	unzip client.zip
 	mv smallchat-client client
 	docker build --tag $(DOCKER_IMG_NAME):$(VERSION) --tag $(DOCKER_IMG_NAME):latest ./
-	echo $$NEXUS_PASSWORD | docker login --username $(NEXUS_USER) --password-stdin $(NEXUS_URL)
-	docker tag $(DOCKER_IMG_NAME) $(NEXUS_URL)/$(DOCKER_IMG_NAME):$(VERSION)
-	docker push $(NEXUS_URL)/$(DOCKER_IMG_NAME):$(VERSION)
+	echo $$NEXUS_PASSWORD | docker login --username $(NEXUS_USER) --password-stdin $(DOCKER_URL)
+	docker tag $(DOCKER_IMG_NAME) $(DOCKER_URL)/$(DOCKER_IMG_NAME):$(VERSION)
+	docker push $(DOCKER_URL)/$(DOCKER_IMG_NAME):$(VERSION)
 	rm client.zip
 	rm -R client

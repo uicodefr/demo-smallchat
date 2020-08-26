@@ -1,6 +1,6 @@
-FROM nginx:1.15-alpine
+FROM nginx:alpine
 
-MAINTAINER uicode.fr
+LABEL maintainer="uicode.fr"
 
 RUN mkdir /log
 VOLUME /log

@@ -127,5 +127,5 @@ jobs:
           which ssh-agent || ( apt-get update -y && apt-get install openssh-client -y )
           eval $(ssh-agent)
           echo "$SSH_KEY" | tr -d '\r' | ssh-add -
-          ssh -o StrictHostKeyChecking=no $SSH_HOST "cd smallchat && sudo ./RUN.sh server $serverVersion && sudo ./RUN.sh client $clientVersion && exit"
+          ssh -o StrictHostKeyChecking=no $SSH_HOST "cd appdemos && sudo ./deploy.sh smallchat server $serverVersion && sudo ./deploy.sh smallchat client $clientVersion && exit"
 
