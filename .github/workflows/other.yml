@@ -28,8 +28,6 @@ jobs:
           echo ERROR: Wrong version 1>&2
           exit 1
         fi
-        mkdir -p ~/.m2
-        echo $NEXUS_SETTINGS > ~/.m2/settings.xml
       working-directory: ${{ env.working-directory }}
 
     - name: Test
