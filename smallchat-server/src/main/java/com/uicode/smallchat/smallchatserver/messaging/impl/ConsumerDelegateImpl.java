@@ -1,13 +1,14 @@
 package com.uicode.smallchat.smallchatserver.messaging.impl;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.regex.Pattern;
 import java.util.Set;
 import java.util.UUID;
+import java.util.regex.Pattern;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -106,7 +107,7 @@ public class ConsumerDelegateImpl implements ConsumerDelegate {
     @Override
     public <T extends AbstractNotice> Promise<T> poll(String topic, Class<T> type, long timeout) {
         Promise<T> promise = Promise.promise();
-        getConsumer(topic).poll(timeout, pollResult -> {
+        getConsumer(topic).poll(Duration.ofMillis(timeout), pollResult -> {
             if (pollResult.failed()) {
                 promise.fail(pollResult.cause());
                 return;
@@ -216,8 +217,8 @@ public class ConsumerDelegateImpl implements ConsumerDelegate {
         Promise<Map<TopicPartition, Long>> promise = Promise.promise();
 
         Future.<KafkaConsumerRecords<String, JsonObject>>future(pollPromise ->
-        // Pool with 0 for establish a connection and load assignment
-        consumer.poll(0, pollPromise::handle)
+        // XXX Pool with 100ms for establish a connection and load assignment
+        consumer.poll(Duration.ofMillis(100), pollPromise::handle)
 
         ).compose(consumerRecords ->
         // Get Topic Partitions

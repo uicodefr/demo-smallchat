@@ -94,18 +94,28 @@ export class ChatService {
     }
   }
 
-  public connectWebSocket() {
+  public connect() {
     if (this.webSocket) {
       this.webSocket.close();
     }
+    this.connectWebSocket();
 
-    this.connect();
     this.chatStateService.getChatState().then((chatState) => {
       this.chatStateSubject.next(this.improveChatState(chatState));
     });
   }
 
-  private connect() {
+  public disconnect() {
+    if (this.webSocket) {
+      this.webSocket.close();
+
+      this.chatStateService.getChatState().then((chatState) => {
+        this.chatStateSubject.next(this.improveChatState(chatState));
+      });
+    }
+  }
+
+  private connectWebSocket() {
     this.connectedSubject.next(false);
     this.webSocket = new WebSocket(this.convertToWebSocketUrl(UrlConstant.WEBSOCKET));
     this.webSocket.onerror = (eventError) => {

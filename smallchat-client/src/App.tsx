@@ -39,7 +39,7 @@ export class App extends React.Component<Props, State> {
       this.setState({
         init: true,
       });
-      this.chatService.connectWebSocket();
+      this.chatService.connect();
     });
   }
 

@@ -3,16 +3,22 @@ import { Login } from './Login';
 import { render, fireEvent } from '@testing-library/react';
 import { AppDi } from '../App.di';
 import { RestClientServiceMock } from '../service/util/rest-client.service.mock';
+import { ChatServiceMock } from '../service/chat/chat.service.mock';
 import { myDi } from '../util/my-di';
 import { AuthenticationService } from '../service/auth/authentication.service';
 
 describe('Login', () => {
-  let mockRestClientService = new RestClientServiceMock();
+  const mockRestClientService = new RestClientServiceMock();
+  const mockChatService = new ChatServiceMock();
   AppDi.registerForUnitTest([
     {
       provide: 'RestClientService',
       useValue: mockRestClientService,
     },
+    {
+      provide: 'ChatService',
+      useValue: mockChatService
+    }
   ]);
 
   test('Loads and works', async () => {

@@ -82,42 +82,9 @@ public class WebSocketServerImpl implements WebSocketServer {
                 }
             });
 
-            serverWebSocket.exceptionHandler(exception -> {
-                LOGGER.error("Error with server WebSocket", exception);
-            });
+            serverWebSocket.exceptionHandler(exception -> LOGGER.error("Error with server WebSocket", exception));
 
-            serverWebSocket.textMessageHandler(textMessage -> {
-                try {
-                    JsonObject receiveWebSocketMsg = new JsonObject(textMessage);
-                    String subject = receiveWebSocketMsg.getString("subject");
-
-                    if (subject == null) {
-                        LOGGER.error("No subject on message : {}", textMessage.trim());
-                    }
-
-                    switch (subject) {
-
-                    case WebSocketMsg.CHANNEL_MESSAGE_SUBJECT:
-                        JsonObject data = receiveWebSocketMsg.getJsonObject("data");
-                        SendChannelMessageMsg sendChannelMessage = data.mapTo(SendChannelMessageMsg.class);
-                        webSocketMediator.receiveSendMessage(userId, sendChannelMessage.getChannelId(),
-                                sendChannelMessage.getMessage());
-                        break;
-
-                    case WebSocketMsg.PING_SUBJECT:
-                        serverWebSocket
-                            .writeTextMessage(Json.encode(WebSocketMsg.of(WebSocketMsg.PONG_SUBJECT, "pong")));
-                        break;
-
-                    default:
-                        LOGGER.error("Subject on message unknown : {}", textMessage.trim());
-                        break;
-                    }
-
-                } catch (Exception exception) {
-                    LOGGER.error(String.format("Receive bad message : %s", textMessage.trim()), exception);
-                }
-            });
+            serverWebSocket.textMessageHandler(textMessage -> handleMessage(serverWebSocket, userId, textMessage));
 
             serverWebSocket.accept();
         });
@@ -152,6 +119,39 @@ public class WebSocketServerImpl implements WebSocketServer {
             });
 
         return result;
+    }
+
+    private void handleMessage(ServerWebSocket serverWebSocket, String userId, String textMessage) {
+        try {
+            JsonObject receiveWebSocketMsg = new JsonObject(textMessage);
+            String subject = receiveWebSocketMsg.getString("subject");
+
+            if (subject == null) {
+                LOGGER.error("No subject on message : {}", textMessage);
+                return;
+            }
+
+            switch (subject) {
+
+            case WebSocketMsg.CHANNEL_MESSAGE_SUBJECT:
+                JsonObject data = receiveWebSocketMsg.getJsonObject("data");
+                SendChannelMessageMsg sendChannelMessage = data.mapTo(SendChannelMessageMsg.class);
+                webSocketMediator.receiveSendMessage(userId, sendChannelMessage.getChannelId(),
+                        sendChannelMessage.getMessage());
+                break;
+
+            case WebSocketMsg.PING_SUBJECT:
+                serverWebSocket.writeTextMessage(Json.encode(WebSocketMsg.of(WebSocketMsg.PONG_SUBJECT, "pong")));
+                break;
+
+            default:
+                LOGGER.error("Subject on message unknown : {}", textMessage);
+                break;
+            }
+
+        } catch (Exception exception) {
+            LOGGER.error(String.format("Receive bad message : %s", textMessage), exception);
+        }
     }
 
     private List<Pair<ServerWebSocket, String>> getSubscriptionList(String subscriptionId) {

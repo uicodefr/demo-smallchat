@@ -69,7 +69,9 @@ export class Menu extends React.Component<Props, State> {
         <Nav>
           <GlobalInfo />
           <HasRoleUser>
-            <Nav.Link onClick={this.handleClickLogout}>Logout</Nav.Link>
+            <LinkContainer to="/">
+              <Nav.Link onClick={this.handleClickLogout}>Logout</Nav.Link>
+            </LinkContainer>
           </HasRoleUser>
           <HasRoleUser not={true}>
             <LinkContainer to="/signin">

@@ -20,7 +20,9 @@ export class ChatServiceMock {
     } as ChatStateModel)
   );
 
-  public connectWebSocket = jest.fn();
+  public connect = jest.fn();
+
+  public disconnect = jest.fn();
 
   public getChannelObservable = jest.fn((channelId) => {
     return of({

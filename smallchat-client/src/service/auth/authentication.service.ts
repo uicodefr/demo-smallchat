@@ -17,7 +17,7 @@ export class AuthenticationService {
   public login(username: string, password: string): Promise<UserModel | null> {
     return this.restClientService.login(username, password).then((user) => {
       if (user) {
-        myDi.get<ChatService>('ChatService').connectWebSocket();
+        myDi.get<ChatService>('ChatService').connect();
       }
       this.userSubject.next(user);
       return user;
@@ -25,7 +25,10 @@ export class AuthenticationService {
   }
 
   public logout(): Promise<void> {
-    return this.restClientService.logout().finally(() => this.userSubject.next(null));
+    return this.restClientService.logout().finally(() => {
+      this.userSubject.next(null);
+      myDi.get<ChatService>('ChatService').disconnect();
+    });
   }
 
   public getCurrentUser(): UserModel | null {
