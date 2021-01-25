@@ -7,11 +7,6 @@ import { GlobalService } from './service/global/global.service';
 import { GlobalInfoService } from './service/util/global-info.service';
 import { RestClientService } from './service/util/rest-client.service';
 
-interface RegisterObject<T> {
-  provide: string;
-  useValue: T;
-}
-
 export class AppDi {
   public static register() {
     this.registerServices();
@@ -26,17 +21,5 @@ export class AppDi {
     myDi.register('GlobalService', GlobalService);
     myDi.register('GlobalInfoService', GlobalInfoService);
     myDi.register('RestClientService', RestClientService);
-  }
-
-  public static registerForUnitTest(mockRegisterArray?: Array<RegisterObject<any>>) {
-    this.registerServices();
-    myDi.unregister('RestClientService'); // unregister because it makes http call
-    myDi.unregister('ChatService'); // unregister because it uses a websocket
-    if (mockRegisterArray) {
-      for (const registerObject of mockRegisterArray) {
-        myDi.registerInstance(registerObject.provide, registerObject.useValue);
-      }
-    }
-    myDi.loadInstances();
   }
 }

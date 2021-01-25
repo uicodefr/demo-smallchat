@@ -24,6 +24,7 @@ import com.uicode.smallchat.smallchatserver.websocket.impl.SendChannelMessageMsg
 import io.netty.handler.codec.http.cookie.Cookie;
 import io.netty.handler.codec.http.cookie.ServerCookieDecoder;
 import io.vertx.core.MultiMap;
+import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpClient;
 import io.vertx.core.http.HttpHeaders;
@@ -34,7 +35,6 @@ import io.vertx.ext.web.client.WebClient;
 import io.vertx.ext.web.codec.BodyCodec;
 import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
-import io.vertx.rxjava.core.Promise;
 
 class IntegrationTest extends TestBase {
 

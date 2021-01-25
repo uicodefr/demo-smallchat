@@ -1,9 +1,9 @@
 import { of } from 'rxjs';
-import { ChatStateModel } from '../../model/chat/chat-state.model';
-import { ChannelFullModel } from '../../model/channel/channel-full.model';
-import { ChannelMessage, MessageCode } from '../../model/channel/channel-message';
+import { ChannelFullModel } from '../../../model/channel/channel-full.model';
+import { MessageCode, ChannelMessage } from '../../../model/channel/channel-message';
+import { ChatStateModel } from '../../../model/chat/chat-state.model';
 
-export class ChatServiceMock {
+export class ChatService {
   public getChatState = jest.fn().mockReturnValue(null);
 
   public getChatStateObservable = jest.fn().mockReturnValue(

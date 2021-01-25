@@ -109,6 +109,9 @@ export class ChatService {
     if (this.webSocket) {
       this.webSocket.close();
 
+      this.channelSubjectMap.clear();
+      this.unreadMessagesChannelMap.clear();
+
       this.chatStateService.getChatState().then((chatState) => {
         this.chatStateSubject.next(this.improveChatState(chatState));
       });

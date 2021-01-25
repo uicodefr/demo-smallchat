@@ -1,27 +1,19 @@
 import React from 'react';
-import { RestClientServiceMock } from '../service/util/rest-client.service.mock';
 import { AppDi } from '../App.di';
-import { render, fireEvent, wait } from '@testing-library/react';
+import { render, fireEvent, waitFor } from '@testing-library/react';
 import { AuthenticationService } from '../service/auth/authentication.service';
 import { myDi } from '../util/my-di';
 import { Channel } from './Channel';
-import { ChatServiceMock } from '../service/chat/chat.service.mock';
 import { MemoryRouter } from 'react-router-dom';
 import { PrivateRoute } from './shared/security/PrivateRoute';
+import { ChatService } from '../service/chat/chat.service';
+
+jest.mock('../service/util/rest-client.service');
+jest.mock('../service/chat/chat.service');
 
 describe('Channel', () => {
-  const mockRestClientService = new RestClientServiceMock();
-  const mockChatService = new ChatServiceMock();
-  AppDi.registerForUnitTest([
-    {
-      provide: 'RestClientService',
-      useValue: mockRestClientService,
-    },
-    {
-      provide: 'ChatService',
-      useValue: mockChatService,
-    },
-  ]);
+  AppDi.register();
+  const chatService = myDi.get<ChatService>('ChatService');
 
   beforeEach(() => {
     myDi.get<AuthenticationService>('AuthenticationService').loadUser();
@@ -36,15 +28,15 @@ describe('Channel', () => {
     expect(loginRender.getByTestId('send-button')).toBeTruthy();
     expect(loginRender.getByText(/Hello message/)).toBeTruthy();
 
-    await wait(() => {
+    await waitFor(() => {
       fireEvent.click(loginRender.getByTestId('send-button'));
     });
-    expect(mockChatService.sendMessage).toHaveBeenCalledTimes(0);
+    expect(chatService.sendMessage).toHaveBeenCalledTimes(0);
 
-    await wait(() => {
+    await waitFor(() => {
       fireEvent.change(loginRender.getByTestId('message-input'), { target: { value: 'messagetest' } });
       fireEvent.click(loginRender.getByTestId('send-button'));
     });
-    expect(mockChatService.sendMessage).toHaveBeenCalledWith('channeltest', 'messagetest');
+    expect(chatService.sendMessage).toHaveBeenCalledWith('channeltest', 'messagetest');
   });
 });

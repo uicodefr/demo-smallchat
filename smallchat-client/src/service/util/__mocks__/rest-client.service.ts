@@ -1,8 +1,8 @@
-import { UrlConstant } from '../../const/url-constant';
-import { CountLikesModel } from '../../model/global/count-likes.model';
-import { UserModel } from '../../model/global/user.model';
+import { UrlConstant } from '../../../const/url-constant';
+import { CountLikesModel } from '../../../model/global/count-likes.model';
+import { UserModel } from '../../../model/global/user.model';
 
-export class RestClientServiceMock {
+export class RestClientService {
   public get = jest.fn((url) => {
     switch (url) {
       case UrlConstant.User.CURRENT_USER:

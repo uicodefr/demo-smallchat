@@ -13,13 +13,9 @@ class MyDi {
     this.instancesMap = new Map<string, any>();
   }
 
-  public register<A, B>(className: string, classType: Type<B>): void {
+  public register<A>(className: string, classType: Type<A>): void {
     this.classesMap.set(className, classType);
     this.instancesMap.delete(className);
-  }
-
-  public registerInstance<A>(className: string, instance: A): void {
-    this.instancesMap.set(className, instance);
   }
 
   public unregister(className: string): void {

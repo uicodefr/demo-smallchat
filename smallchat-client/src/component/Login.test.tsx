@@ -1,25 +1,16 @@
-import React from 'react';
 import { Login } from './Login';
 import { render, fireEvent } from '@testing-library/react';
 import { AppDi } from '../App.di';
-import { RestClientServiceMock } from '../service/util/rest-client.service.mock';
-import { ChatServiceMock } from '../service/chat/chat.service.mock';
 import { myDi } from '../util/my-di';
 import { AuthenticationService } from '../service/auth/authentication.service';
+import { RestClientService } from '../service/util/rest-client.service';
+
+jest.mock('../service/util/rest-client.service');
+jest.mock('../service/chat/chat.service');
 
 describe('Login', () => {
-  const mockRestClientService = new RestClientServiceMock();
-  const mockChatService = new ChatServiceMock();
-  AppDi.registerForUnitTest([
-    {
-      provide: 'RestClientService',
-      useValue: mockRestClientService,
-    },
-    {
-      provide: 'ChatService',
-      useValue: mockChatService
-    }
-  ]);
+  AppDi.register();
+  const restClientService = myDi.get<RestClientService>('RestClientService');
 
   test('Loads and works', async () => {
     const loginRender = render(<Login />);
@@ -35,7 +26,7 @@ describe('Login', () => {
 
     fireEvent.click(loginRender.getByTestId('logout-button'));
     await loginRender.findByTestId('login-button');
-    expect(mockRestClientService.logout).toHaveBeenCalledTimes(1);
+    expect(restClientService.logout).toHaveBeenCalledTimes(1);
     expect(authenticationService.getCurrentUser()).toBeFalsy();
   });
 });

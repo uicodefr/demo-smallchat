@@ -7,12 +7,6 @@ describe('myDi', () => {
     }
   }
 
-  class AFake {
-    getOne() {
-      return -1;
-    }
-  }
-
   class B {
     getTwo() {
       return 2;
@@ -36,16 +30,5 @@ describe('myDi', () => {
 
     myDi.unregister('A');
     expect(() => myDi.get('A')).toThrow(Error);
-  });
-
-  test('register with overloading', () => {
-    myDi.register('A', AFake);
-    myDi.registerInstance('B', {
-      getTwo: () => -2,
-    } as B);
-    const a = myDi.get<A>('A');
-    const b = myDi.get<B>('B');
-    expect(a.getOne()).toBe(-1);
-    expect(b.getTwo()).toBe(-2);
   });
 });
