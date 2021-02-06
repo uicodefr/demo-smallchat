@@ -54,6 +54,7 @@ public class MainRouter {
         router.route().consumes(APPLICATION_JSON);
         router.route().produces(APPLICATION_JSON);
         router.route().handler(requestHandler -> {
+            LOGGER.debug("Request {} on {}", requestHandler.request().method(), requestHandler.request().uri());
             requestHandler.response().putHeader("content-type", APPLICATION_JSON);
             requestHandler.next();
         });

@@ -80,7 +80,10 @@ export class Channel extends React.Component<Props, State> {
           <ChannelsCard />
 
           <Card>
-            <Card.Header>Users</Card.Header>
+            <Card.Header>
+              <i className="fa fa-users mr-2"></i>
+              Users
+            </Card.Header>
             <Card.Body>
               {chatState ? (
                 <ListGroup variant="flush" className="smallItem">

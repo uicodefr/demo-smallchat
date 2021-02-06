@@ -12,6 +12,7 @@ import { ChatStateService } from '../../service/chat/chat-state.service';
 import { GlobalInfoService } from '../../service/util/global-info.service';
 import { ChatService } from '../../service/chat/chat.service';
 import { ChatStateModel } from '../../model/chat/chat-state.model';
+import { ChannelStateModel } from '../../model/chat/channel-state.model';
 import { Subscription } from 'rxjs';
 import { HasRoleUser } from '../shared/security/HasRoleUser';
 import { TransitionGroup, CSSTransition } from 'react-transition-group';
@@ -23,8 +24,8 @@ interface Props {}
 interface State {
   chatState: ChatStateModel | null;
   settings: boolean;
-  editChannels: Array<ChannelModel>;
-  currentChannel: ChannelModel | null;
+  editChannels: Array<ChannelStateModel>;
+  currentChannel: ChannelStateModel | null;
   showSaveDialog: boolean;
   showDeleteDialog: boolean;
 }
@@ -96,7 +97,7 @@ export class ChannelsCard extends React.Component<Props, State> {
     }
   }
 
-  handleClickEdit(channel: ChannelModel) {
+  handleClickEdit(channel: ChannelStateModel) {
     this.setState({
       showSaveDialog: true,
       currentChannel: { ...channel },
@@ -106,7 +107,7 @@ export class ChannelsCard extends React.Component<Props, State> {
   handleClickCreate() {
     this.setState({
       showSaveDialog: true,
-      currentChannel: new ChannelModel(),
+      currentChannel: new ChannelStateModel(),
     });
   }
 
@@ -132,7 +133,7 @@ export class ChannelsCard extends React.Component<Props, State> {
     }
   }
 
-  handleClickDelete(channel: ChannelModel) {
+  handleClickDelete(channel: ChannelStateModel) {
     this.setState({
       showDeleteDialog: true,
       currentChannel: { ...channel },
@@ -157,6 +158,7 @@ export class ChannelsCard extends React.Component<Props, State> {
     return (
       <Card className="ChannelsCard">
         <Card.Header>
+          <i className="far fa-comments mr-2"></i>
           Channels
           <HasRoleUser>
             <Button
@@ -172,57 +174,54 @@ export class ChannelsCard extends React.Component<Props, State> {
           {chatState ? (
             <>
               <ListGroup variant="flush">
-                {this.state.settings ? (
-                  <TransitionGroup>
-                    {this.state.editChannels.map((channel) => (
-                      <CSSTransition key={channel.id} timeout={300} classNames="transitionFade">
-                        <ListGroup.Item title={channel.id} className="smallItem">
-                          {channel.name}
-                          <span className="channelButtonZone float-right">
-                            <Button
-                              variant="primary"
-                              size="sm"
-                              className="fa fa-pencil"
-                              title="Edit"
-                              onClick={() => this.handleClickEdit(channel)}
-                            ></Button>
-                            <Button
-                              variant="danger"
-                              size="sm"
-                              className="fa fa-trash"
-                              title="Delete"
-                              onClick={() => this.handleClickDelete(channel)}
-                            ></Button>
-                          </span>
-                        </ListGroup.Item>
-                      </CSSTransition>
-                    ))}
-                  </TransitionGroup>
-                ) : (
-                  <TransitionGroup>
-                    {chatState.channels.map((channel) => (
-                      <CSSTransition key={channel.id} timeout={300} classNames="transitionFade">
-                        <LinkContainer to={'/c/' + channel.id}>
-                          <ListGroup.Item action className="smallItem">
-                            {channel.subscribed ? (
-                              <>
-                                <strong>{channel.name}</strong>
-                                {channel.unreadMessages ? (
-                                  <Badge className="badgeUnread" pill variant="warning">
-                                    {channel.unreadMessages}
-                                  </Badge>
-                                ) : null}
-                              </>
-                            ) : (
-                              channel.name
-                            )}
+                <TransitionGroup component={null}>
+                  {this.state.settings
+                    ? this.state.editChannels.map((channel) => (
+                        <CSSTransition key={channel.id} timeout={300} classNames="transitionFade">
+                          <ListGroup.Item title={channel.id} className="smallItem">
+                            {channel.name}
+                            <span className="channelButtonZone float-right">
+                              <Button
+                                variant="primary"
+                                size="sm"
+                                className="fa fa-pen"
+                                title="Edit"
+                                onClick={() => this.handleClickEdit(channel)}
+                              ></Button>
+                              <Button
+                                variant="danger"
+                                size="sm"
+                                className="fa fa-trash"
+                                title="Delete"
+                                onClick={() => this.handleClickDelete(channel)}
+                              ></Button>
+                            </span>
                           </ListGroup.Item>
-                        </LinkContainer>
-                      </CSSTransition>
-                    ))}
-                  </TransitionGroup>
-                )}
+                        </CSSTransition>
+                      ))
+                    : chatState.channels.map((channel) => (
+                        <CSSTransition key={channel.id} timeout={300} classNames="transitionFade">
+                          <LinkContainer to={'/c/' + channel.id}>
+                            <ListGroup.Item action className="smallItem">
+                              {channel.subscribed ? (
+                                <>
+                                  <strong>{channel.name}</strong>
+                                  {channel.unreadMessages ? (
+                                    <Badge className="badgeUnread" pill variant="warning">
+                                      {channel.unreadMessages}
+                                    </Badge>
+                                  ) : null}
+                                </>
+                              ) : (
+                                channel.name
+                              )}
+                            </ListGroup.Item>
+                          </LinkContainer>
+                        </CSSTransition>
+                      ))}
+                </TransitionGroup>
               </ListGroup>
+
               {this.state.settings ? (
                 <div className="generalButtonZone">
                   <Button variant="primary" size="sm" onClick={this.handleClickCreate}>

@@ -1,8 +1,9 @@
 {
   "name": "smallchat-client",
-  "version": "0.3.3-SNAPSHOT",
+  "version": "0.4.0-SNAPSHOT",
   "private": true,
   "dependencies": {
+    "@fortawesome/fontawesome-free": "^5.15.2",
     "@testing-library/jest-dom": "^5.11.9",
     "@testing-library/react": "^11.2.3",
     "@testing-library/user-event": "^12.6.2",

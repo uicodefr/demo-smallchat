@@ -2,13 +2,14 @@ import React from 'react';
 import Modal from 'react-bootstrap/Modal';
 import Button from 'react-bootstrap/Button';
 import { ChannelModel } from '../../../model/chat/channel.model';
+import { ChannelStateModel } from '../../../model/chat/channel-state.model';
 import Form from 'react-bootstrap/Form';
 import { Formik, FormikValues } from 'formik';
 import * as yup from 'yup';
 
 interface Props {
   show: boolean;
-  channel: ChannelModel;
+  channel: ChannelStateModel;
   onSave: (channel: ChannelModel) => void;
   onCancel: () => void;
 }
@@ -22,7 +23,7 @@ export class SaveChannelDialog extends React.Component<Props, State> {
     super(props);
 
     this.state = {
-      validatedForm: false
+      validatedForm: false,
     };
 
     this.handleCancel = this.handleCancel.bind(this);
@@ -32,7 +33,7 @@ export class SaveChannelDialog extends React.Component<Props, State> {
   componentDidUpdate(prevProps: Props) {
     if (prevProps.show !== this.props.show) {
       this.setState({
-        validatedForm: false
+        validatedForm: false,
       });
     }
   }
@@ -43,9 +44,14 @@ export class SaveChannelDialog extends React.Component<Props, State> {
 
   handleSubmit(formValues: FormikValues) {
     this.setState({
-      validatedForm: true
+      validatedForm: true,
     });
-    const channelToSave = { ...this.props.channel, ...formValues } as ChannelModel;
+
+    const channelToSave = {
+      id: formValues.id,
+      name: formValues.name,
+      description: formValues.description,
+    } as ChannelModel;
     this.props.onSave(channelToSave);
   }
 
@@ -59,12 +65,9 @@ export class SaveChannelDialog extends React.Component<Props, State> {
     valueChannel.description = valueChannel.description || '';
 
     const schema = yup.object({
-      id: yup
-        .string()
-        .required()
-        .matches(new RegExp(ChannelModel.ID_PATTERN)),
+      id: yup.string().required().matches(new RegExp(ChannelModel.ID_PATTERN)),
       name: yup.string().required(),
-      description: yup.string()
+      description: yup.string(),
     });
 
     return (
