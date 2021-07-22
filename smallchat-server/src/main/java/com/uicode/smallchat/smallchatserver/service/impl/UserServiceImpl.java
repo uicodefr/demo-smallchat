@@ -76,7 +76,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public Promise<User> authenticate(String jwtToken) {
         Promise<User> promise = Promise.promise();
-        JsonObject authInfo = new JsonObject().put("jwt", jwtToken).put("options", new JsonObject());
+        JsonObject authInfo = new JsonObject().put("token", jwtToken);
 
         getJwtProvider().authenticate(authInfo, authResult -> {
             if (authResult.succeeded()) {

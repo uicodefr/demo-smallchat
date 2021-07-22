@@ -14,6 +14,7 @@ all:
 test:
 	@echo "test (version: $(VERSION))"
 	npm ci
+	npm run lint
 	npm test -- --watchAll=false
 
 buildOnly:

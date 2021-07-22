@@ -57,7 +57,7 @@ export class RestClientService {
   }
 
   public login(username: string, password: string): Promise<UserModel | null> {
-    let formData = new FormData();
+    const formData = new FormData();
     formData.append('username', username);
     formData.append('password', password);
 

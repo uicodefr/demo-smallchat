@@ -1,6 +1,6 @@
 {
   "name": "smallchat-client",
-  "version": "0.4.0-SNAPSHOT",
+  "version": "0.5.0-SNAPSHOT",
   "private": true,
   "dependencies": {
     "@fortawesome/fontawesome-free": "^5.15.2",
@@ -34,6 +34,7 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
+    "lint": "eslint src",
     "eject": "react-scripts eject"
   },
   "jest": {
@@ -43,7 +44,30 @@
     "extends": [
       "react-app",
       "react-app/jest"
-    ]
+    ],
+    "rules": {
+      "no-unused-expressions": [
+        "error"
+      ],
+      "prefer-const": [
+        "error"
+      ],
+      "semi": [
+        "error",
+        "always"
+      ],
+      "quotes": [
+        "error",
+        "single",
+        {
+          "avoidEscape": true,
+          "allowTemplateLiterals": true
+        }
+      ],
+      "@typescript-eslint/no-shadow": [
+        "error"
+      ]
+    }
   },
   "browserslist": {
     "production": [

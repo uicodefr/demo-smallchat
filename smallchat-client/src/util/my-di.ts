@@ -29,7 +29,7 @@ class MyDi {
       return myInstance;
     }
 
-    let myClass = this.classesMap.get(className);
+    const myClass = this.classesMap.get(className);
     if (!myClass) {
       throw new Error('MyDI - Service not found : ' + className);
     }

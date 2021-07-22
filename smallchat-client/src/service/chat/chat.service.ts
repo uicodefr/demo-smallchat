@@ -45,7 +45,7 @@ export class ChatService {
   }
 
   private reEmitChatStateIfPossible() {
-    let chatState = this.getChatState();
+    const chatState = this.getChatState();
     if (chatState) {
       this.chatStateSubject.next(this.improveChatState(chatState));
     }
