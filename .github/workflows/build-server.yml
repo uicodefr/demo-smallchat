@@ -1,0 +1,58 @@
+name: Build Server
+
+on:
+  workflow_call:
+    secrets:
+      NEXUS_PASSWORD:
+        required: true
+      NEXUS_SETTINGS:
+        required: true
+
+jobs:
+  build-server:
+    runs-on: ubuntu-latest
+    env:
+      CI: true
+      NEXUS_PASSWORD: ${{ secrets.NEXUS_PASSWORD }}
+      NEXUS_SETTINGS: ${{ secrets.NEXUS_SETTINGS }}
+      working-directory: smallchat-server
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Set up JDK
+        uses: actions/setup-java@v1
+        with:
+          java-version: 11
+
+      - name: Init script
+        run: |
+          branch=$GITHUB_REF_NAME
+          if [[ "$branch" = "master" ]]; then
+            ./version.sh remove-snapshot
+          fi
+          if [[ "$branch" = "master" || "$branch" = "develop" ]]; then
+            echo "DEPLOY=OK" >> $GITHUB_ENV
+          fi
+          mkdir -p ~/.m2
+          echo $NEXUS_SETTINGS > ~/.m2/settings.xml
+
+      - name: Test
+        run: make test
+        working-directory: ${{ env.working-directory }}
+
+      - name : Build Only
+        if: ${{ ! env.DEPLOY }}
+        run: make build
+        working-directory: ${{ env.working-directory }}
+
+      - name : Build and Archiving
+        if: ${{ env.DEPLOY }}
+        run: make build
+        working-directory: ${{ env.working-directory }}
+
+      - name : Containerize
+        if: ${{ env.DEPLOY }}
+        run: make containerize
+        working-directory: ${{ env.working-directory }}

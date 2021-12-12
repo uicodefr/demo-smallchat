@@ -1,0 +1,57 @@
+name: Deploy
+
+on:
+  workflow_call:
+    inputs:
+      deploy:
+        required: true
+        type: string
+      serverVersion:
+        required: true
+        type: string
+      clientVersion:
+        required: true
+        type: string
+    secrets:
+      QA_SSH_HOST:
+        required: true
+      QA_SSH_KEY:
+        required: true
+      PROD_SSH_HOST:
+        required: true
+      PROD_SSH_KEY:
+        required: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      DEPLOY: ${{ inputs.deploy }}
+      SERVER_VERSION: ${{ inputs.serverVersion }}
+      CLIENT_VERSION: ${{ inputs.clientVersion }}
+      QA_SSH_HOST: ${{ secrets.QA_SSH_HOST }}
+      QA_SSH_KEY: ${{ secrets.QA_SSH_KEY }}
+      PROD_SSH_HOST: ${{ secrets.PROD_SSH_HOST }}
+      PROD_SSH_KEY: ${{ secrets.PROD_SSH_KEY }}
+
+    steps:
+      - name: Deploy
+        run: |
+          serverVersion="$SERVER_VERSION"
+          clientVersion="$CLIENT_VERSION"
+          echo "server: $serverVersion // client: $clientVersion"
+          deploy="$DEPLOY"
+          if [[ "$deploy" == "qa" ]]; then
+            SSH_HOST="$QA_SSH_HOST"
+            SSH_KEY="$QA_SSH_KEY"
+          elif [[ "$deploy" == "prod" ]]; then
+            SSH_HOST="$PROD_SSH_HOST"
+            SSH_KEY="$PROD_SSH_KEY"
+          else
+            echo "Unknown environment '$deploy'"
+            exit 1
+          fi
+          which ssh-agent || ( apt-get update -y && apt-get install openssh-client -y )
+          eval $(ssh-agent)
+          echo "$SSH_KEY" | tr -d '\r' | ssh-add -
+          ssh -o StrictHostKeyChecking=no $SSH_HOST "cd appdemos && sudo ./deploy.sh smallchat server $serverVersion && sudo ./deploy.sh smallchat client $clientVersion && exit"

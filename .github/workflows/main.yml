@@ -1,0 +1,67 @@
+name: Main CI
+
+on:
+  push:
+    branches:
+      - "**"
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      deploy: ${{ steps.init.outputs.DEPLOY }}
+      serverVersion: ${{ steps.init.outputs.SERVER_VERSION }}
+      clientVersion: ${{ steps.init.outputs.CLIENT_VERSION }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Init script
+        id: init
+        run: |
+          branch=$GITHUB_REF_NAME
+          echo "Branch : $branch"
+          deploy=""
+          if [[ "$branch" = "master" || "$branch" = "develop" ]]; then
+              declare -A branchWithEnv=( ["master"]="prod" ["develop"]="qa" )
+              deploy="${branchWithEnv[$branch]}"
+          fi
+          echo "Deploy: $deploy"
+          echo "::set-output name=DEPLOY::$deploy"
+          if [[ "$branch" = "master" ]]; then
+            ./version.sh remove-snapshot
+          fi
+          serverVersion=$(./version.sh list server)
+          echo "Server Version : $serverVersion"
+          echo "::set-output name=SERVER_VERSION::$serverVersion"
+          clientVersion=$(./version.sh list client)
+          echo "Client Version : $clientVersion"
+          echo "::set-output name=CLIENT_VERSION::$clientVersion"
+
+  build-server:
+    needs: [prepare]
+    uses: uicodefr/demo-smallchat/.github/workflows/build-server.yml@v1
+    secrets:
+      NEXUS_PASSWORD: ${{ secrets.NEXUS_PASSWORD }}
+      NEXUS_SETTINGS: ${{ secrets.NEXUS_SETTINGS }}
+
+  build-client:
+    needs: [prepare]
+    uses: uicodefr/demo-smallchat/.github/workflows/build-client.yml@v1
+    secrets:
+      NEXUS_PASSWORD: ${{ secrets.NEXUS_PASSWORD }}
+
+  deploy:
+    needs: [prepare, build-server, build-client]
+    if: ${{ needs.prepare.outputs.deploy }}
+    uses: uicodefr/demo-smallchat/.github/workflows/deploy.yml@v1
+    with:
+      deploy: ${{ needs.prepare.outputs.deploy }}
+      serverVersion: ${{ needs.prepare.outputs.serverVersion }}
+      clientVersion: ${{ needs.prepare.outputs.clientVersion }}
+    secrets:
+      QA_SSH_HOST: ${{ secrets.QA_HOST }}
+      QA_SSH_KEY: ${{ secrets.QA_SSH_KEY }}
+      PROD_SSH_HOST: ${{ secrets.PROD_HOST }}
+      PROD_SSH_KEY: ${{ secrets.PROD_SSH_KEY }}

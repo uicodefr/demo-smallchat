@@ -1,0 +1,53 @@
+name: Build Client
+
+on:
+  workflow_call:
+    secrets:
+      NEXUS_PASSWORD:
+        required: true
+
+jobs:
+  build-client:
+    runs-on: ubuntu-latest
+    env:
+      CI: true
+      NEXUS_PASSWORD: ${{ secrets.NEXUS_PASSWORD }}
+      working-directory: smallchat-client
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Use Node.js
+        uses: actions/setup-node@v1
+        with:
+          node-version: 16.x
+
+      - name: Init script
+        run: |
+          branch=$GITHUB_REF_NAME
+          if [[ "$branch" = "master" ]]; then
+            ./version.sh remove-snapshot
+          fi
+          if [[ "$branch" = "master" || "$branch" = "develop" ]]; then
+            echo "DEPLOY=OK" >> $GITHUB_ENV
+          fi
+
+      - name: Test
+        run: make test
+        working-directory: ${{ env.working-directory }}
+
+      - name : Build Only
+        if: ${{ ! env.DEPLOY }}
+        run: make build
+        working-directory: ${{ env.working-directory }}
+
+      - name : Build and Archiving
+        if: ${{ env.DEPLOY }}
+        run: make build
+        working-directory: ${{ env.working-directory }}
+
+      - name : Containerize
+        if: ${{ env.DEPLOY }}
+        run: make containerize
+        working-directory: ${{ env.working-directory }}
