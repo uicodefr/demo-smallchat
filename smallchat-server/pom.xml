@@ -20,7 +20,7 @@
 		<kafka.version>2.7.2</kafka.version>
 
         <guice.version>4.2.3</guice.version>
-        <log4j.version>2.15.0</log4j.version>
+        <log4j.version>2.16.0</log4j.version>
         <commons-io.version>2.10.0</commons-io.version>
         <commons-lang3.version>3.11</commons-lang3.version>
         <sqlite.version>3.36.0</sqlite.version>
