@@ -1,6 +1,6 @@
 {
   "name": "smallchat-client",
-  "version": "0.5.1-SNAPSHOT",
+  "version": "0.5.2-SNAPSHOT",
   "private": true,
   "dependencies": {
     "@fortawesome/fontawesome-free": "^5.15.4",
