@@ -2,7 +2,10 @@
 
 help_command() {
 	echo "# VERSION : Change the version for the client and the server"
-
+	echo "The commands are : "
+	echo "- list [all|client|server] : to list version"
+	echo "- change _newVersion_ : change the version"
+	echo "- remove-snapshot : remove the snapshot from the version"
 }
 
 list_command() {
